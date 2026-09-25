@@ -114,7 +114,13 @@ function vulcanus_use_mimir(): bool
 }
 
 /**
- * ASS wint van WO. Geen van beide → null (handmatige keuze blijft).
+ * Auto-detect alleen als het nummer ASS of WO bevat (hoofdletterongevoelig, substring).
+ * - ASS → assemblage, ook als er ook WO in staat (nooit werkplaats)
+ * - anders WO → werkplaats (nooit assemblage)
+ * - geen van beide → null
+ *
+ * Null betekent: niet gokken. AO, kale cijfers en andere productienummers blijven
+ * null; de kiezer op index.php kiest dan het rapporttype.
  *
  * @return 'assemblage'|'werkplaats'|null
  */
@@ -128,6 +134,33 @@ function vulcanus_detect_report_type(string $no): ?string
         return 'werkplaats';
     }
     return null;
+}
+
+/**
+ * Zonder ASS/WO blijft de handmatige keuze van de kiezer gelden.
+ *
+ * @param 'assemblage'|'werkplaats'|string $manual
+ * @return 'assemblage'|'werkplaats'
+ */
+function vulcanus_resolve_report_type(string $no, string $manual): string
+{
+    $manual = $manual === 'assemblage' ? 'assemblage' : 'werkplaats';
+    return vulcanus_detect_report_type($no) ?? $manual;
+}
+
+/**
+ * Korte uitleg bij de kiezer. Bij null blijft de tekst bij de handmatige keuze.
+ */
+function vulcanus_type_choice_note(string $no): string
+{
+    $detected = vulcanus_detect_report_type($no);
+    if ($detected === 'assemblage') {
+        return 'ASS in het nummer: dit wordt een assemblageopdracht.';
+    }
+    if ($detected === 'werkplaats') {
+        return 'WO in het nummer: dit wordt een werkplaatsorder.';
+    }
+    return 'Geen ASS of WO in het nummer. Kies zelf het rapporttype; die keuze blijft gelden.';
 }
 
 /**

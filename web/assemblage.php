@@ -21,6 +21,7 @@ if ($no === '') {
     $no = 'ASS26094567';
 }
 
+// Alleen doorsturen als het nummer duidelijk WO bevat (en geen ASS). Zonder ASS/WO blijft deze pagina.
 if (vulcanus_detect_report_type($no) === 'werkplaats') {
     vulcanus_redirect_to_report('werkplaats', $no);
 }

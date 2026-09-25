@@ -3,6 +3,7 @@
  * Vulcanus – kiezer: Werkplaatsorder of Assemblage.
  * Live via Mímir als $mimirApi gezet is; anders sample-data.
  * ASS in het nummer → assemblage; WO → werkplaatsorder.
+ * Zonder ASS en zonder WO blijft de keuze in de rapport-select gelden.
  */
 declare(strict_types=1);
 
@@ -20,10 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['go'])) {
     if ($no === '') {
         $no = $type === 'assemblage' ? $defaultAo : $defaultWo;
     }
-    $detected = vulcanus_detect_report_type($no);
-    if ($detected !== null) {
-        $type = $detected;
-    }
+    // ASS/WO overrulen de select. Zonder die letters blijft $type de keuze van de gebruiker.
+    $type = vulcanus_resolve_report_type($no, $type);
     $target = $type === 'assemblage' ? 'assemblage.php' : 'werkplaatsorder.php';
     $params = ['no' => $no];
     if (vulcanus_sample_forced()) {
@@ -34,6 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['go'])) {
 }
 
 $noValue = $no !== '' ? $no : $defaultWo;
+$detectedOnForm = vulcanus_detect_report_type($noValue);
+if ($detectedOnForm !== null) {
+    $type = $detectedOnForm;
+}
+$typeNote = vulcanus_type_choice_note($noValue);
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -51,17 +55,19 @@ $noValue = $no !== '' ? $no : $defaultWo;
       Printbare Werkplaatsopdracht en Assemblageopdracht (A4).
       Live via Mímir wanneer <code>$mimirApi</code> in auth.php staat; zonder sleutel blijft dit sample-data
       (<code>?sample=1</code> forceert sample).
-      Een nummer met ASS opent assemblage, een nummer met WO de werkplaatsorder.
+      Een nummer met ASS opent altijd assemblage, een nummer met WO altijd de werkplaatsorder.
+      Zonder ASS of WO kies je zelf het rapporttype; die keuze wordt niet overruled.
     </p>
 
     <form method="get" action="index.php">
       <input type="hidden" name="go" value="1">
 
       <label for="type">Rapport</label>
-      <select name="type" id="type">
+      <select name="type" id="type" required>
         <option value="werkplaats"<?= $type !== 'assemblage' ? ' selected' : '' ?>>Werkplaatsorder</option>
         <option value="assemblage"<?= $type === 'assemblage' ? ' selected' : '' ?>>Assemblage</option>
       </select>
+      <p class="type-note" id="type-note"><?= htmlspecialchars($typeNote, ENT_QUOTES, 'UTF-8') ?></p>
 
       <label for="no">Werkorder / Assemblagenr.</label>
       <input type="text" name="no" id="no" value="<?= htmlspecialchars($noValue, ENT_QUOTES, 'UTF-8') ?>"
@@ -80,25 +86,47 @@ $noValue = $no !== '' ? $no : $defaultWo;
     </p>
   </div>
   <script>
+    var defaultWo = <?= json_encode($defaultWo) ?>;
+    var defaultAo = <?= json_encode($defaultAo) ?>;
+    var typeNotes = <?= json_encode([
+        'assemblage' => vulcanus_type_choice_note('ASS'),
+        'werkplaats' => vulcanus_type_choice_note('WO'),
+        'manual' => vulcanus_type_choice_note('104582'),
+    ], JSON_UNESCAPED_UNICODE) ?>;
+
     function vulcanusDetectReportType(no) {
       var upper = String(no || '').toUpperCase();
       if (upper.indexOf('ASS') !== -1) return 'assemblage';
       if (upper.indexOf('WO') !== -1) return 'werkplaats';
       return null;
     }
+    function vulcanusSyncTypeNote() {
+      var select = document.getElementById('type');
+      var detected = vulcanusDetectReportType(document.getElementById('no').value);
+      select.disabled = false;
+      select.hidden = false;
+      document.getElementById('type-note').textContent = typeNotes[detected || 'manual'];
+    }
     document.getElementById('no').addEventListener('input', function () {
       var detected = vulcanusDetectReportType(this.value);
       if (detected) document.getElementById('type').value = detected;
+      vulcanusSyncTypeNote();
     });
     document.getElementById('type').addEventListener('change', function () {
       var inp = document.getElementById('no');
       var detected = vulcanusDetectReportType(inp.value);
-      if (this.value === 'assemblage') {
-        if (!inp.value || detected === 'werkplaats') inp.value = <?= json_encode($defaultAo) ?>;
-      } else {
-        if (!inp.value || detected === 'assemblage') inp.value = <?= json_encode($defaultWo) ?>;
+      if (!String(inp.value || '').trim()) {
+        inp.value = this.value === 'assemblage' ? defaultAo : defaultWo;
+      } else if (detected && detected !== this.value) {
+        if (inp.value === defaultWo || inp.value === defaultAo) {
+          inp.value = this.value === 'assemblage' ? defaultAo : defaultWo;
+        } else {
+          this.value = detected;
+        }
       }
+      vulcanusSyncTypeNote();
     });
+    vulcanusSyncTypeNote();
   </script>
 </body>
 </html>

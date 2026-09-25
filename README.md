@@ -12,13 +12,13 @@ Live data via Mímir wanneer `$mimirApi` in `web/auth.php` staat (niet in git; T
 Zonder `$mimirApi` vallen de rapporten terug op sample-data, zodat lokaal previewen blijft werken.
 `?sample=1` forceert sample-data ook als Mímir aan staat.
 
-Ordernummers worden automatisch herkend (hoofdletterongevoelig, als substring):
+Ordernummers worden alleen automatisch herkend als ze ASS of WO bevatten (hoofdletterongevoelig, als substring):
 
 - bevat **ASS** → assemblage (nooit werkplaats)
 - bevat **WO** → werkplaatsorder (nooit assemblage)
-- geen van beide → de handmatige keuze op de kiezer blijft gelden
+- geen van beide → `vulcanus_detect_report_type` geeft `null`. Dat zijn echte productienummers (ook `AO…` is geen ASS). De kiezer op `index.php` blijft zichtbaar en bepaalt het rapporttype; er wordt niet gegokt.
 
-Een verkeerde pagina (`werkplaatsorder.php?no=ASS…` of omgekeerd) stuurt door naar het juiste rapport en behoudt overige query-args.
+Een verkeerde pagina stuurt alleen door als `no` duidelijk ASS of WO bevat (`werkplaatsorder.php?no=ASS…` of omgekeerd) en behoudt overige query-args. Zonder die letters blijft de geopende pagina staan.
 
 ## Lokaal preview
 

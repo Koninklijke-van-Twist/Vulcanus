@@ -69,6 +69,18 @@ check(vulcanus_detect_report_type('preWO') === 'werkplaats', 'WO substring is we
 check(vulcanus_detect_report_type('WO-ASS-1') === 'assemblage', 'ASS wins when both markers are present');
 check(vulcanus_detect_report_type('12345') === null, 'neither marker keeps manual choice');
 check(vulcanus_detect_report_type('') === null, 'empty number is not detected');
+check(vulcanus_detect_report_type('AO26094567') === null, 'AO is not ASS and is not auto-detected');
+check(vulcanus_detect_report_type('104582') === null, 'plain production number is not auto-detected');
+check(vulcanus_detect_report_type('20-15202129') === null, 'job-like number is not auto-detected');
+check(vulcanus_detect_report_type('W01234') === null, 'W followed by zero is not the letters WO');
+check(vulcanus_resolve_report_type('104582', 'assemblage') === 'assemblage', 'neither keeps the assemblage choice');
+check(vulcanus_resolve_report_type('104582', 'werkplaats') === 'werkplaats', 'neither keeps the werkplaats choice');
+check(vulcanus_resolve_report_type('AO2609', 'assemblage') === 'assemblage', 'AO still follows the selector');
+check(vulcanus_resolve_report_type('ASS1', 'werkplaats') === 'assemblage', 'ASS overrides a werkplaats choice');
+check(vulcanus_resolve_report_type('wo9', 'assemblage') === 'werkplaats', 'WO overrides an assemblage choice');
+check(str_contains(vulcanus_type_choice_note('104582'), 'Kies zelf'), 'neither note asks for a manual choice');
+check(str_contains(vulcanus_type_choice_note('ASS1'), 'assemblage'), 'ASS note names assemblage');
+check(str_contains(vulcanus_type_choice_note('WO1'), 'werkplaats'), 'WO note names werkplaats');
 check(vulcanus_mimir_enabled() === false, 'empty key disables Mímir');
 
 $sampleWo = fetch_werkplaatsorder('WO26091234');
