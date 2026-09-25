@@ -334,6 +334,7 @@ check(is_string($css) && str_contains($css, '@keyframes vulcanus-spin'), 'spinne
 check(is_string($css) && str_contains($css, '.spinner') && str_contains($css, 'display: none !important'), 'print rules hide the spinner');
 check(is_string($css) && !preg_match('/table\.lines tr\s*\{[^}]*page-break-inside:\s*avoid/', $css), 'tbody rows are allowed to split across pages');
 check(is_string($css) && str_contains($css, 'counter(page)') && str_contains($css, '@bottom-right'), 'printed page numbers use the page margin counter');
+check(is_string($css) && str_contains($css, 'min-height: 0') && str_contains($css, 'overflow: visible'), 'print sheet drops the screen A4 min-height so it cannot clip');
 
 check(vulcanus_line_is_blank([
     'No' => '',

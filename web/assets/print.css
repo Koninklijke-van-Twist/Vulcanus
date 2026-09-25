@@ -461,11 +461,15 @@ table.lines tr.instructie td.desc .ext-text {
   color: #333;
 }
 
-/* —— Print —— */
+/* —— Print ——
+   Scherm-.page is 210×297mm mét padding. Die maten niet mee de printer in:
+   anders stapelen ze op @page-margin en loopt de onderkant van blad 1
+   over op een half blad 2. counter(page) op een element wordt in Chrome "0";
+   het nummer hoort in de paginamarge. */
 @media print {
   @page {
     size: A4 portrait;
-    margin: 14mm 12mm 16mm;
+    margin: 12mm;
     @bottom-right {
       content: "Pagina " counter(page);
       font-family: Arial, Helvetica, "Segoe UI", sans-serif;
@@ -474,17 +478,33 @@ table.lines tr.instructie td.desc .ext-text {
     }
   }
 
+  :root {
+    --page-w: auto;
+    --page-h: auto;
+    --margin: 0mm;
+  }
+
   html, body {
     background: #fff;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
     font-size: 9.5pt;
   }
 
   .page {
     width: auto;
-    min-height: auto;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    max-height: none;
     margin: 0;
     padding: 0;
     box-shadow: none;
+    position: static;
+    overflow: visible;
   }
 
   .screen-only,
@@ -499,7 +519,8 @@ table.lines tr.instructie td.desc .ext-text {
   table.lines,
   table.lines tbody,
   table.lines tbody tr,
-  table.lines tbody td {
+  table.lines tbody td,
+  table.lines tbody td .ext-text {
     break-inside: auto;
     page-break-inside: auto;
   }
@@ -508,13 +529,13 @@ table.lines tr.instructie td.desc .ext-text {
     display: table-header-group;
   }
 
-  .page-header {
+  table.lines thead tr,
+  table.lines thead th {
     break-inside: avoid;
     page-break-inside: avoid;
-    break-after: avoid;
-    page-break-after: avoid;
   }
 
+  .page-header,
   .order-barcode {
     break-inside: avoid;
     page-break-inside: avoid;
