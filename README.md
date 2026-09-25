@@ -12,13 +12,13 @@ Live data via Mímir wanneer `$mimirApi` in `web/auth.php` staat (niet in git; T
 Zonder `$mimirApi` vallen de rapporten terug op sample-data, zodat lokaal previewen blijft werken.
 `?sample=1` forceert sample-data ook als Mímir aan staat.
 
-Ordernummers worden alleen automatisch herkend als ze ASS of WO bevatten (hoofdletterongevoelig, als substring):
+`index.php` vraagt alleen om een ordernummer (logo, veld, Doorgaan). Herkenning is hoofdletterongevoelig, als substring:
 
-- bevat **ASS** → assemblage (nooit werkplaats)
-- bevat **WO** → werkplaatsorder (nooit assemblage)
-- geen van beide → `vulcanus_detect_report_type` geeft `null`. Dat zijn echte productienummers (ook `AO…` is geen ASS). De kiezer op `index.php` blijft zichtbaar en bepaalt het rapporttype; er wordt niet gegokt.
+- bevat **ASS** → meteen `assemblage.php` (nooit werkplaats)
+- bevat **WO** → meteen `werkplaatsorder.php` (nooit assemblage)
+- geen van beide → `vulcanus_detect_report_type` geeft `null`. Geen gok (`AO…` is geen ASS). Index toont dan twee knoppen: Assemblageopdracht en Werkplaatsopdracht, met het ingevoerde nummer ter controle.
 
-Een verkeerde pagina stuurt alleen door als `no` duidelijk ASS of WO bevat (`werkplaatsorder.php?no=ASS…` of omgekeerd) en behoudt overige query-args. Zonder die letters blijft de geopende pagina staan.
+Een dieplink `index.php?no=ASS…` of `?no=WO…` routeert meteen. Zonder die letters opent `?no=` het keuzescherm. Een verkeerde rapportpagina stuurt alleen door als `no` duidelijk ASS of WO bevat, en behoudt overige query-args zoals `sample`.
 
 ## Lokaal preview
 
@@ -28,9 +28,9 @@ php -S localhost:8765 -t web
 
 Open: <http://localhost:8765/>
 
-- Kiezer: `index.php`
-- Sample WO: `werkplaatsorder.php?no=WO26091234`
-- Sample ASS: `assemblage.php?no=ASS26094567`
+- Invoer: `index.php` (bij ASS/WO meteen het rapport; anders de twee knoppen)
+- Voorbeeld WO: `werkplaatsorder.php?no=WO26091234`
+- Voorbeeld ASS: `assemblage.php?no=ASS26094567`
 
 > Lokaal: kopieer `web/auth_TEMPLATE.php` → `web/auth.php` (staat in `.gitignore`) met minimaal `$allowedUsers`. Trusted localhost slaat logincheck over. Laat `$mimirApi` weg voor sample-data.
 
