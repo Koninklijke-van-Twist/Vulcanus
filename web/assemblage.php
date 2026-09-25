@@ -26,6 +26,11 @@ if (vulcanus_detect_report_type($no) === 'werkplaats') {
     vulcanus_redirect_to_report('werkplaats', $no);
 }
 
+// Eerst een laadscherm; de print-HTML (inclusief niet-gevonden / Mímir-fout) komt via ?_content=1.
+if (!vulcanus_content_requested()) {
+    vulcanus_render_report_loading($no);
+}
+
 try {
     $report = fetch_assemblage($no);
 } catch (VulcanusNotFoundException $e) {
@@ -35,7 +40,10 @@ try {
 }
 
 $header = $report['header'];
-$lines = $report['lines'];
+$lines = array_values(array_filter(
+    $report['lines'],
+    static fn (array $line): bool => !vulcanus_line_is_blank($line)
+));
 $sourceLabel = vulcanus_source_label($report['source']);
 $barcodeText = barcode_digits_only($header['No']);
 $barcodeSvg  = render_code128b_svg($barcodeText, 2, 36, false);
@@ -128,9 +136,7 @@ $gedaan = (string) $header['Assembled_Quantity'] . '/' . (string) $header['Quant
       </tbody>
     </table>
 
-    <footer class="report-footer">
-      <span>Pagina 1</span>
-    </footer>
+    <footer class="report-footer"></footer>
   </article>
 </body>
 </html>

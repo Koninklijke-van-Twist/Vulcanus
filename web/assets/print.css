@@ -54,6 +54,7 @@ html, body {
   width: 84px;
   height: 84px;
   margin: 0 auto 28px;
+  object-fit: contain;
 }
 
 .chooser h1 {
@@ -150,6 +151,69 @@ html, body {
   color: #8a1f1f;
   font-size: 0.95rem;
   text-align: left;
+}
+
+/* Laadstatus: alleen scherm. Print verbergt .chooser / .screen-only. */
+.chooser .loading-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.chooser .spinner {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid #d5dbe3;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  flex: 0 0 auto;
+  animation: vulcanus-spin 0.7s linear infinite;
+}
+
+.chooser.is-loading {
+  cursor: progress;
+}
+
+.chooser.is-loading .choice-lead,
+.chooser.is-loading .choice-list,
+.chooser.is-loading .back,
+.chooser.is-loading .field-error {
+  display: none;
+}
+
+.chooser.is-loading button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.chooser.is-loading input[type="text"]:disabled {
+  color: var(--ink);
+  opacity: 1;
+  background: #f4f6f8;
+}
+
+.chooser .loading-error {
+  margin: 12px 0 0;
+  color: #8a1f1f;
+  font-size: 1rem;
+}
+
+@keyframes vulcanus-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chooser .spinner {
+    animation: none;
+    border-right-color: var(--accent);
+  }
 }
 
 /* —— Compact PDF-like report header —— */
@@ -397,45 +461,83 @@ table.lines tr.instructie td.desc .ext-text {
   color: #333;
 }
 
-/* —— Print —— */
+/* —— Print ——
+   Scherm-.page is 210×297mm mét padding. Die maten niet mee de printer in:
+   anders stapelen ze op @page-margin en loopt de onderkant van blad 1
+   over op een half blad 2. counter(page) op een element wordt in Chrome "0";
+   het nummer hoort in de paginamarge. */
 @media print {
   @page {
     size: A4 portrait;
     margin: 12mm;
+    @bottom-right {
+      content: "Pagina " counter(page);
+      font-family: Arial, Helvetica, "Segoe UI", sans-serif;
+      font-size: 8.5pt;
+      color: #111;
+    }
+  }
+
+  :root {
+    --page-w: auto;
+    --page-h: auto;
+    --margin: 0mm;
   }
 
   html, body {
     background: #fff;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
     font-size: 9.5pt;
   }
 
   .page {
     width: auto;
-    min-height: auto;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    max-height: none;
     margin: 0;
     padding: 0;
     box-shadow: none;
+    position: static;
+    overflow: visible;
   }
 
   .screen-only,
   .no-print-hint,
-  .chooser {
+  .chooser,
+  .spinner,
+  .loading-status,
+  .loading-error {
     display: none !important;
+  }
+
+  table.lines,
+  table.lines tbody,
+  table.lines tbody tr,
+  table.lines tbody td,
+  table.lines tbody td .ext-text {
+    break-inside: auto;
+    page-break-inside: auto;
   }
 
   table.lines thead {
     display: table-header-group;
   }
 
-  table.lines tr {
+  table.lines thead tr,
+  table.lines thead th {
+    break-inside: avoid;
     page-break-inside: avoid;
   }
 
-  .page-header {
-    page-break-after: avoid;
-  }
-
+  .page-header,
   .order-barcode {
+    break-inside: avoid;
     page-break-inside: avoid;
   }
 }

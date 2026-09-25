@@ -114,6 +114,17 @@ function vulcanus_use_mimir(): bool
 }
 
 /**
+ * ?_content=1 vraagt de print-HTML. Zonder die vlag komt alleen het laadscherm.
+ */
+function vulcanus_content_requested(): bool
+{
+    if (!isset($_GET['_content']) || is_array($_GET['_content'])) {
+        return false;
+    }
+    return trim((string) $_GET['_content']) === '1';
+}
+
+/**
  * Auto-detect alleen als het nummer ASS of WO bevat (hoofdletterongevoelig, substring).
  * - ASS → assemblage, ook als er ook WO in staat (nooit werkplaats)
  * - anders WO → werkplaats (nooit assemblage)
@@ -270,6 +281,20 @@ function vulcanus_normalize_record(array $row): array
  * @param list<array<string, mixed>> $lines
  * @return list<array<string, string>>
  */
+/**
+ * Lege BC-regels (geen nr, omschrijving of extended text) niet afdrukken.
+ * Een aantal 0 mét artikelnummer blijft staan.
+ */
+function vulcanus_line_is_blank(array $line): bool
+{
+    foreach (['No', 'Description', 'KVT_Extended_Text'] as $key) {
+        if (trim((string) ($line[$key] ?? '')) !== '') {
+            return false;
+        }
+    }
+    return true;
+}
+
 function vulcanus_normalize_lines(array $lines): array
 {
     $lineKeys = ['Line_No', 'Type', 'No', 'Description', 'Quantity', 'Unit_of_Measure_Code', 'KVT_Extended_Text'];
@@ -391,6 +416,108 @@ function fetch_assemblage(string $no): array
         'lines' => vulcanus_normalize_lines($lines),
         'source' => 'mimir',
     ];
+}
+
+/**
+ * Laadscherm voor assemblage.php / werkplaatsorder.php.
+ * JavaScript haalt dezelfde URL met _content=1 op en vervangt het document.
+ */
+function vulcanus_report_loading_document(string $no): string
+{
+    $noEsc = h($no);
+    $backHref = vulcanus_sample_forced() ? 'index.php?sample=1' : 'index.php';
+    $backEsc = h($backHref);
+
+    $query = $_GET;
+    unset($query['_content']);
+    $query['_content'] = '1';
+    $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if ($script === '' || $script === '.' || $script === '..') {
+        $script = 'index.php';
+    }
+    $contentHref = h($script . '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986));
+
+    return <<<HTML
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vulcanus – {$noEsc}</title>
+  <link rel="stylesheet" href="assets/print.css">
+</head>
+<body>
+  <div class="chooser is-loading screen-only" id="report-loading" aria-busy="true">
+    <img class="chooser-logo" src="assets/kvt-logo.png" alt="KVT" width="84" height="84">
+    <p class="entered-no">{$noEsc}</p>
+    <p class="loading-status" id="loading-status" role="status">
+      <span class="spinner" aria-hidden="true"></span>
+      Opdracht ophalen…
+    </p>
+    <div id="loading-error" hidden>
+      <p class="loading-error">De opdracht kon niet worden opgehaald.</p>
+      <p class="hint"><a href="{$backEsc}">← Terug naar Vulcanus</a></p>
+    </div>
+    <noscript>
+      <style>#loading-status{display:none}</style>
+      <p class="hint"><a href="{$contentHref}">Opdracht openen</a></p>
+    </noscript>
+  </div>
+  <script>
+  (function () {
+    var statusEl = document.getElementById('loading-status');
+    var errorEl = document.getElementById('loading-error');
+
+    function showError() {
+      if (statusEl) {
+        statusEl.hidden = true;
+      }
+      if (errorEl) {
+        errorEl.hidden = false;
+      }
+    }
+
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted && document.getElementById('loading-status')) {
+        window.location.reload();
+      }
+    });
+
+    var url;
+    try {
+      url = new URL(window.location.href);
+      url.searchParams.set('_content', '1');
+    } catch (ignore) {
+      showError();
+      return;
+    }
+
+    fetch(url.toString(), { credentials: 'same-origin' })
+      .then(function (response) {
+        return response.text();
+      })
+      .then(function (html) {
+        if (!html || !String(html).trim()) {
+          throw new Error('empty');
+        }
+        document.open();
+        document.write(html);
+        document.close();
+      })
+      .catch(function () {
+        showError();
+      });
+  })();
+  </script>
+</body>
+</html>
+HTML;
+}
+
+function vulcanus_render_report_loading(string $no): never
+{
+    echo vulcanus_report_loading_document($no);
+    exit;
 }
 
 function vulcanus_render_message_page(int $status, string $title, string $message, string $detail = ''): never
