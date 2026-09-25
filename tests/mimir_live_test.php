@@ -25,9 +25,8 @@ function check(bool $ok, string $message): void
 
 function reset_mimir_state(): void
 {
-    global $mimirApi, $mimirBase, $mimirCompany;
-    $mimirApi = '';
-    unset($mimirBase, $mimirCompany);
+    $GLOBALS['mimirApi'] = '';
+    unset($GLOBALS['mimirBase'], $GLOBALS['mimirCompany']);
     unset($_GET['sample']);
     mimir_set_transport(null);
 }
@@ -187,7 +186,7 @@ check(vulcanus_source_label('sample') === 'sample data', 'sample screen label');
 
 reset_mimir_state();
 $mimirApi = 'mimir_test_key';
-$mimirBase = 'http://mimir.test/api/';
+$mimirBase = 'https://mimir.test/api/';
 $mimirCompany = 'Andere BV';
 $assCaptured = capture_transport(static function (array $body): array {
     $table = (string) ($body['table'] ?? '');
@@ -215,7 +214,7 @@ $assCaptured = capture_transport(static function (array $body): array {
 });
 $liveAss = fetch_assemblage('ASS26094567');
 check($liveAss['source'] === 'mimir', 'assemblage source is mimir');
-check(($assCaptured->urls[0] ?? '') === 'http://mimir.test/api/query.php', 'mimirBase is trimmed and used');
+check(($assCaptured->urls[0] ?? '') === 'https://mimir.test/api/query.php', 'mimirBase is trimmed and used');
 check(($assCaptured->calls[0]['company'] ?? '') === 'Andere BV', 'mimirCompany override');
 check(($assCaptured->calls[0]['table'] ?? '') === 'AssemblageKop', 'assemblage header table');
 check(($assCaptured->calls[0]['filter'] ?? '') === "No eq 'ASS26094567'", 'assemblage header filter');
@@ -228,6 +227,25 @@ check($liveAss['header']['Due_Date'] === '', 'BC blank date 0001-01-01 is empty'
 check($liveAss['header']['Quantity'] === '3', 'whole-number quantity stays a plain integer string');
 check($liveAss['header']['Assembled_Quantity'] === '3', 'float 3.0 prints as 3');
 check(($liveAss['lines'][0]['No'] ?? '') === 'A', 'assemblage lines sort by Line_No');
+
+reset_mimir_state();
+$mimirBase = 'HTTPS://mimir.test/api/';
+check(mimir_base_url() === 'HTTPS://mimir.test/api', 'https scheme is accepted regardless of case');
+
+$mimirApi = 'mimir_test_key';
+$mimirBase = 'http://mimir.test/api/';
+$cleartextCalled = false;
+mimir_set_transport(static function () use (&$cleartextCalled): array {
+    $cleartextCalled = true;
+    return ['code' => 200, 'raw' => '{"value":[]}'];
+});
+$rejectedCleartext = false;
+try {
+    mimir_query('AssemblageKop', mimir_odata_eq('No', 'ASS1'), [], 300);
+} catch (Exception $error) {
+    $rejectedCleartext = $error->getMessage() === 'Mímir-basis-URL moet https zijn ($mimirBase).';
+}
+check($rejectedCleartext && $cleartextCalled === false, 'non-https mimirBase is rejected before credentials are sent');
 
 reset_mimir_state();
 $mimirApi = 'mimir_test_key';

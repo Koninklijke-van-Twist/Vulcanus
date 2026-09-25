@@ -6,7 +6,7 @@
  * Zonder sleutel blijven de rapporten op sample-data.
  *
  * Optioneel in auth.php:
- *   $mimirBase    = 'https://sleutels.kvt.nl/mimir/api';
+ *   $mimirBase    = 'https://sleutels.kvt.nl/mimir/api'; // alleen https
  *   $mimirCompany = 'Koninklijke van Twist';
  *
  * POST {base}/query.php
@@ -36,7 +36,12 @@ function mimir_base_url(): string
 {
     global $mimirBase;
     if (isset($mimirBase) && is_string($mimirBase) && trim($mimirBase) !== '') {
-        return rtrim(trim($mimirBase), '/');
+        $base = rtrim(trim($mimirBase), '/');
+        $scheme = parse_url($base, PHP_URL_SCHEME);
+        if (!is_string($scheme) || strcasecmp($scheme, 'https') !== 0) {
+            throw new Exception('Mímir-basis-URL moet https zijn ($mimirBase).');
+        }
+        return $base;
     }
     return 'https://sleutels.kvt.nl/mimir/api';
 }

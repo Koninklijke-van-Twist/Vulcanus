@@ -16,5 +16,5 @@
 // ];
 
 // $mimirApi     = 'mimir_…';                              // verplicht voor live data
-// $mimirBase    = 'https://sleutels.kvt.nl/mimir/api';    // optioneel
+// $mimirBase    = 'https://sleutels.kvt.nl/mimir/api';    // optioneel; alleen https
 // $mimirCompany = 'Koninklijke van Twist';                // optioneel
