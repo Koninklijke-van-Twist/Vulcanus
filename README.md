@@ -12,13 +12,15 @@ Live data via Mímir wanneer `$mimirApi` in `web/auth.php` staat (niet in git; T
 Zonder `$mimirApi` vallen de rapporten terug op sample-data, zodat lokaal previewen blijft werken.
 `?sample=1` forceert sample-data ook als Mímir aan staat.
 
-`index.php` vraagt alleen om een ordernummer (logo, veld, Doorgaan). Herkenning is hoofdletterongevoelig, als substring:
+`index.php` vraagt alleen om een ordernummer (logo, veld, Doorgaan). Bij verzenden toont de kiezer meteen het logo, het nummer en **Opdracht ophalen…** (CSS-spinner). Het veld en de knop gaan direct uit, zodat de opdracht niet twee keer vertrekt. Herkenning is hoofdletterongevoelig, als substring — in PHP (`vulcanus_detect_report_type`) en in diezelfde volgorde in de kiezer-JavaScript:
 
 - bevat **ASS** → meteen `assemblage.php` (nooit werkplaats)
 - bevat **WO** → meteen `werkplaatsorder.php` (nooit assemblage)
-- geen van beide → `vulcanus_detect_report_type` geeft `null`. Geen gok (`AO…` is geen ASS). Index toont dan twee knoppen: Assemblageopdracht en Werkplaatsopdracht, met het ingevoerde nummer ter controle.
+- geen van beide → `null`. Geen gok (`AO…` is geen ASS). Index toont dan twee knoppen: Assemblageopdracht en Werkplaatsopdracht, met het ingevoerde nummer ter controle. Een klik toont dezelfde laadstatus en opent daarna het rapport.
 
-Een dieplink `index.php?no=ASS…` of `?no=WO…` routeert meteen. Zonder die letters opent `?no=` het keuzescherm. Een verkeerde rapportpagina stuurt alleen door als `no` duidelijk ASS of WO bevat, en behoudt overige query-args zoals `sample`.
+Zonder JavaScript blijft het formulier naar `index.php` gaan. Een dieplink `index.php?no=ASS…` of `?no=WO…` routeert meteen. Zonder die letters opent `?no=` het keuzescherm. Een verkeerde rapportpagina stuurt alleen door als `no` duidelijk ASS of WO bevat, en behoudt overige query-args zoals `sample`.
+
+De rapportpagina's antwoorden eerst met een laadscherm (zelfde kiezer-stijl) en halen de print-HTML daarna op via `fetch` van dezelfde URL met `_content=1` (`credentials: 'same-origin'`). Mímir laat het scherm zo niet blanco. Een netwerkfout toont een melding met een link terug naar de kiezer. `?_content=1` zelf is het bestaande rapport, inclusief niet-gevonden en Mímir-fout. Zonder JavaScript staat op het laadscherm een link naar diezelfde URL.
 
 ## Lokaal preview
 

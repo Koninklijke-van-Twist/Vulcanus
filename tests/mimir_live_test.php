@@ -27,7 +27,7 @@ function reset_mimir_state(): void
 {
     $GLOBALS['mimirApi'] = '';
     unset($GLOBALS['mimirBase'], $GLOBALS['mimirCompany']);
-    unset($_GET['sample']);
+    unset($_GET['sample'], $_GET['_content']);
     mimir_set_transport(null);
 }
 
@@ -288,6 +288,52 @@ try {
     $badJson = $error->getMessage() === 'Mímir gaf ongeldige JSON terug.';
 }
 check($badJson, 'invalid JSON is an error');
+
+reset_mimir_state();
+unset($_GET['_content']);
+check(vulcanus_content_requested() === false, 'missing _content stays on the loading shell');
+$_GET['_content'] = '1';
+check(vulcanus_content_requested() === true, '_content=1 requests the report body');
+$_GET['_content'] = ' 1 ';
+check(vulcanus_content_requested() === true, 'surrounding space still counts as _content=1');
+$_GET['_content'] = '0';
+check(vulcanus_content_requested() === false, '_content=0 stays on the loading shell');
+$_GET['_content'] = 'true';
+check(vulcanus_content_requested() === false, 'only _content=1 skips the loading shell');
+$_GET['_content'] = ['1'];
+check(vulcanus_content_requested() === false, 'array _content is ignored');
+
+$_GET = ['no' => 'ASS<1>', 'sample' => '1'];
+$_SERVER['SCRIPT_NAME'] = '/assemblage.php';
+$loading = vulcanus_report_loading_document('ASS<1>');
+check(str_contains($loading, 'Opdracht ophalen…'), 'loading shell says the order is being fetched');
+check(str_contains($loading, 'class="spinner"'), 'loading shell includes the spinner');
+check(str_contains($loading, "credentials: 'same-origin'"), 'content fetch stays same-origin');
+check(str_contains($loading, "searchParams.set('_content', '1')"), 'content fetch sets _content=1');
+check(str_contains($loading, 'document.open'), 'fetched HTML replaces the document');
+check(str_contains($loading, 'ASS&lt;1&gt;'), 'order number is escaped on the loading shell');
+check(str_contains($loading, 'index.php?sample=1'), 'sample=1 survives the back link');
+check(str_contains($loading, 'assemblage.php?no=ASS%3C1%3E&amp;sample=1&amp;_content=1'), 'noscript link keeps no, sample and _content');
+check(str_contains($loading, 'De opdracht kon niet worden opgehaald.'), 'network failure copy is Dutch');
+check(!str_contains($loading, 'class="lines"'), 'loading shell is not the print layout');
+check(!str_contains($loading, 'fetch_assemblage'), 'loading shell does not run the report fetch');
+
+$_GET = ['sample' => 'yes'];
+check(str_contains(vulcanus_report_loading_document('WO1'), 'href="index.php?sample=1"'), 'sample=yes still links back with sample=1');
+$_GET = [];
+$plainBack = vulcanus_report_loading_document('104582');
+check(str_contains($plainBack, 'href="index.php"'), 'back link omits sample when it was not forced');
+check(!str_contains($plainBack, 'sample=1'), 'unstyled load does not invent sample=1');
+
+$indexSource = file_get_contents(__DIR__ . '/../web/index.php');
+check(is_string($indexSource) && str_contains($indexSource, "indexOf('ASS')") && str_contains($indexSource, "indexOf('WO')"), 'chooser script checks ASS before WO');
+check(is_string($indexSource) && str_contains($indexSource, 'assemblage.php') && str_contains($indexSource, 'werkplaatsorder.php'), 'chooser script targets both report pages');
+check(is_string($indexSource) && str_contains($indexSource, 'Opdracht ophalen…'), 'chooser script shows the Dutch loading text');
+$css = file_get_contents(__DIR__ . '/../web/assets/print.css');
+check(is_string($css) && str_contains($css, '@keyframes vulcanus-spin'), 'spinner animation lives in print.css');
+check(is_string($css) && str_contains($css, '.spinner') && str_contains($css, 'display: none !important'), 'print rules hide the spinner');
+
+reset_mimir_state();
 
 if ($failures > 0) {
     fwrite(STDERR, "{$failures} failed\n");

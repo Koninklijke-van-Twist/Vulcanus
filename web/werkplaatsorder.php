@@ -22,6 +22,11 @@ if (vulcanus_detect_report_type($no) === 'assemblage') {
     vulcanus_redirect_to_report('assemblage', $no);
 }
 
+// Eerst een laadscherm; de print-HTML (inclusief niet-gevonden / Mímir-fout) komt via ?_content=1.
+if (!vulcanus_content_requested()) {
+    vulcanus_render_report_loading($no);
+}
+
 try {
     $report = fetch_werkplaatsorder($no);
 } catch (VulcanusNotFoundException $e) {
