@@ -18,14 +18,22 @@ if (!is_trusted_requester()) {
     require __DIR__ . "/../login/lib.php";
 
     $currentEmail = strtolower(trim((string) ($_SESSION['user']['email'] ?? '')));
-    $isAllowedUser = false;
 
-    foreach ($allowedUsers as $emailKey => $value) {
-        // Supports both legacy ['user@domain'] and new ['user@domain' => [15, 40]] formats.
-        $allowedEmail = is_int($emailKey) ? (string) $value : (string) $emailKey;
-        if (strtolower(trim($allowedEmail)) === $currentEmail && $currentEmail !== '') {
-            $isAllowedUser = true;
-            break;
+    // Geen of lege $allowedUsers = alle geldige Entra-logins hebben toegang.
+    $allowList = (isset($allowedUsers) && is_array($allowedUsers)) ? $allowedUsers : [];
+    $restrictToAllowList = count($allowList) > 0;
+
+    $isAllowedUser = false;
+    if (!$restrictToAllowList) {
+        $isAllowedUser = ($currentEmail !== '');
+    } else {
+        foreach ($allowList as $emailKey => $value) {
+            // Legacy ['user@domain'] én nieuw ['user@domain' => [15, 40]].
+            $allowedEmail = is_int($emailKey) ? (string) $value : (string) $emailKey;
+            if (strtolower(trim($allowedEmail)) === $currentEmail && $currentEmail !== '') {
+                $isAllowedUser = true;
+                break;
+            }
         }
     }
 
