@@ -2,7 +2,7 @@
 /**
  * Vulcanus – Assemblageopdracht (printbare A4).
  * Hybrid: PDF-compact header + duidelijke regels-tabel.
- * Sample data; live Mímir wiring next: AssemblageKop + AssemblageRegels.
+ * Live: AssemblageKop + AssemblageRegels via Mímir als $mimirApi gezet is.
  *
  * RDL-quirks:
  * - No == "INSTRUCTIE" → Quantity verbergen
@@ -14,20 +14,28 @@ declare(strict_types=1);
 require __DIR__ . '/auth.php';
 require __DIR__ . '/logincheck.php';
 require_once __DIR__ . '/lib/barcode128.php';
-require_once __DIR__ . '/lib/sample_data.php';
+require_once __DIR__ . '/lib/live_data.php';
 
 $no = trim((string) ($_GET['no'] ?? 'ASS26094567'));
 if ($no === '') {
     $no = 'ASS26094567';
 }
 
-$header = sample_assemblage_header($no);
-$lines = sample_assemblage_lines();
-foreach ($lines as &$ln) {
-    $ln['Document_No'] = $no;
+if (vulcanus_detect_report_type($no) === 'werkplaats') {
+    vulcanus_redirect_to_report('werkplaats', $no);
 }
-unset($ln);
 
+try {
+    $report = fetch_assemblage($no);
+} catch (VulcanusNotFoundException $e) {
+    vulcanus_render_not_found($e);
+} catch (Throwable $e) {
+    vulcanus_render_mimir_error($e);
+}
+
+$header = $report['header'];
+$lines = $report['lines'];
+$sourceLabel = vulcanus_source_label($report['source']);
 $barcodeText = barcode_digits_only($header['No']);
 $barcodeSvg  = render_code128b_svg($barcodeText, 2, 36, false);
 
@@ -46,7 +54,7 @@ $gedaan = (string) $header['Assembled_Quantity'] . '/' . (string) $header['Quant
 <body>
   <p class="no-print-hint screen-only">
     <a href="index.php">← Vulcanus</a>
-    · sample data ·
+    · <?= h($sourceLabel) ?> ·
     <a href="javascript:window.print()">Afdrukken</a>
   </p>
 
