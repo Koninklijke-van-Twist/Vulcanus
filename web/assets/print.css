@@ -1,0 +1,394 @@
+/* A4 portrait – hybrid: PDF-compact header + readable regels table */
+
+:root {
+  --ink: #111;
+  --muted: #444;
+  --line: #999;
+  --dot: #888;
+  --bg: #fff;
+  --accent: #1a4a80;
+  --page-w: 210mm;
+  --page-h: 297mm;
+  --margin: 14mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #e4e4e4;
+  color: var(--ink);
+  font-family: Arial, Helvetica, "Segoe UI", sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.28;
+}
+
+/* Scherm: A4-blad */
+.page {
+  width: var(--page-w);
+  min-height: var(--page-h);
+  margin: 16px auto;
+  padding: var(--margin);
+  background: var(--bg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  position: relative;
+}
+
+/* —— Chooser (index) —— */
+.chooser {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 28px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  font-size: 11pt;
+}
+
+.chooser h1 {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+}
+
+.chooser p.lead {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.chooser label {
+  display: block;
+  font-weight: 600;
+  margin: 12px 0 4px;
+}
+
+.chooser input[type="text"],
+.chooser select {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 1rem;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+}
+
+.chooser .actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chooser button,
+.chooser a.btn {
+  display: inline-block;
+  padding: 9px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.chooser button.secondary,
+.chooser a.btn.secondary {
+  background: #666;
+}
+
+.chooser .hint {
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* —— Compact PDF-like report header —— */
+.page-header {
+  margin-bottom: 6px;
+}
+
+.page-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.page-header-top .title-block h1 {
+  margin: 0;
+  font-size: 15pt;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none; /* sentence case, not ALL CAPS strip */
+  line-height: 1.15;
+}
+
+.page-header-top .title-block .subtitle {
+  margin: 1px 0 0;
+  font-size: 9.5pt;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.page-header-top .title-block .print-ts {
+  margin: 1px 0 0;
+  font-size: 8pt;
+  color: var(--muted);
+}
+
+.logo-kvt {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: block;
+}
+
+.rule-solid {
+  border: none;
+  border-top: 1px solid var(--ink);
+  margin: 4px 0 6px;
+}
+
+.rule-dotted {
+  border: none;
+  border-top: 1px dotted var(--dot);
+  margin: 6px 0;
+}
+
+/* Tight label:value grid — no boxed kv cards */
+.header-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 28px;
+  margin: 0 0 4px;
+  font-size: 9pt;
+  line-height: 1.35;
+}
+
+.header-meta.cols-3 {
+  grid-template-columns: 1.1fr 0.9fr 1fr;
+  gap: 2px 16px;
+}
+
+.header-meta .col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.header-meta .row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 6px;
+  align-items: baseline;
+}
+
+.header-meta .row .lbl {
+  font-weight: 400;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.header-meta .row .lbl::after {
+  content: ":";
+}
+
+.header-meta .row .val {
+  font-weight: 400;
+  word-break: break-word;
+}
+
+.header-meta .plain {
+  line-height: 1.35;
+}
+
+/* Order number + barcode under header fields */
+.order-barcode {
+  margin: 4px 0 2px;
+  max-width: 55%;
+}
+
+.order-barcode .order-no {
+  font-size: 12pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0 0 2px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.order-barcode .barcode {
+  display: block;
+  max-width: 260px;
+  height: auto;
+  max-height: 38px;
+}
+
+/* Memo as free body text (no card chrome) */
+.memo-block {
+  margin: 4px 0 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 9pt;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.memo-block .memo-title {
+  display: none; /* PDF has no "Memo" label — just the text */
+}
+
+/* —— Regels table (KEEP our stronger layout) —— */
+.lines-heading {
+  display: none; /* no section title strip like "Planningsregels" */
+}
+
+table.lines {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-top: 2px;
+}
+
+table.lines thead th {
+  text-align: left;
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--ink);
+  padding: 3px 5px 4px;
+}
+
+table.lines thead {
+  display: table-header-group; /* repeat on print pages when possible */
+}
+
+table.lines td {
+  vertical-align: top;
+  padding: 4px 5px 5px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+table.lines tbody tr:last-child td {
+  border-bottom: none;
+}
+
+table.lines td.qty {
+  width: 4.2em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+table.lines td.no {
+  width: 9.5em;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9pt;
+}
+
+table.lines td.desc .desc-main {
+  font-weight: 500;
+}
+
+/* Extended text: readable subtitle (Tim prefers our style, not microscopic) */
+table.lines td.desc .ext-text {
+  display: block;
+  margin-top: 3px;
+  font-size: 8.5pt;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: pre-wrap;
+  line-height: 1.32;
+}
+
+table.lines tr.instructie td.qty {
+  color: transparent;
+}
+
+table.lines tr.instructie td.desc .desc-main {
+  font-weight: 600;
+}
+
+table.lines tr.instructie td.desc .ext-text {
+  font-size: 9pt;
+  color: var(--ink);
+  margin-top: 4px;
+}
+
+/* Footer */
+.report-footer {
+  margin-top: 14px;
+  padding-top: 4px;
+  border-top: 1px solid var(--ink);
+  font-size: 8.5pt;
+  color: var(--ink);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.report-footer .left {
+  display: none;
+}
+
+.no-print-hint {
+  max-width: 210mm;
+  margin: 8px auto 0;
+  padding: 0 12px;
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+}
+
+.no-print-hint a {
+  color: #333;
+}
+
+/* —— Print —— */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html, body {
+    background: #fff;
+    font-size: 9.5pt;
+  }
+
+  .page {
+    width: auto;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .screen-only,
+  .no-print-hint,
+  .chooser {
+    display: none !important;
+  }
+
+  table.lines thead {
+    display: table-header-group;
+  }
+
+  table.lines tr {
+    page-break-inside: avoid;
+  }
+
+  .page-header {
+    page-break-after: avoid;
+  }
+
+  .order-barcode {
+    page-break-inside: avoid;
+  }
+}

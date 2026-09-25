@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="KVT">
+  <!-- Simple blue geometric crown/shield placeholder for KVT -->
+  <defs>
+    <linearGradient id="kvtBlue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2b6cb0"/>
+      <stop offset="100%" stop-color="#1a4a80"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield body -->
+  <path fill="url(#kvtBlue)" d="M32 4 L56 14 L56 34 C56 48 44 58 32 62 C20 58 8 48 8 34 L8 14 Z"/>
+  <!-- Inner panel -->
+  <path fill="#ffffff" opacity="0.18" d="M32 10 L50 18 L50 34 C50 44 40 52 32 55 C24 52 14 44 14 34 L14 18 Z"/>
+  <!-- Crown points -->
+  <path fill="#ffffff" d="M16 28 L22 18 L28 28 L32 16 L36 28 L42 18 L48 28 L48 34 L16 34 Z"/>
+  <!-- Band -->
+  <rect x="16" y="34" width="32" height="5" fill="#ffffff"/>
+  <!-- KVT label -->
+  <text x="32" y="50" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#ffffff">KVT</text>
+</svg>
