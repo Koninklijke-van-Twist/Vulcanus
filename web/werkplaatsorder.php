@@ -47,7 +47,7 @@ $printedAt = print_timestamp();
           <h1><?= h($title) ?></h1>
           <div class="print-ts"><?= h($printedAt) ?></div>
         </div>
-        <img class="logo-kvt" src="assets/kvt-crown.svg" alt="KVT" width="42" height="42">
+        <img class="logo-kvt" src="assets/kvt-logo.png" alt="KVT" width="42" height="42">
       </div>
       <hr class="rule-solid">
 

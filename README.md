@@ -37,7 +37,7 @@ Deploy: `.github/workflows/deploy-ftp.yml` op push naar `master`. Repo-secrets: 
 
 ## Layout
 
-- **Header:** sentence-case titel, print-tijdstempel, KVT-crown, label:value grid, ordernr + Code128 (alleen cijfers uit `No`)
+- **Header:** sentence-case titel, print-tijdstempel, KVT-logo, label:value grid, ordernr + Code128 (alleen cijfers uit `No`)
 - **Regels:** Aantal | Nr. | Omschrijving; `KVT_Extended_Text` als ondertitel; `INSTRUCTIE` verbergt qty; `HR` → UUR
 - Footer: Pagina N
 
