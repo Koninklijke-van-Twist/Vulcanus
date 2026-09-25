@@ -2,7 +2,7 @@
 /**
  * Sample/demo data voor Werkplaatsorder en Assemblage.
  * Inhoud lijkt qua lengte/structuur op de PDF-voorbeelden (fictief, geparafraseerd).
- * Later te vervangen door Mímir/BC OData-calls.
+ * Live reads zitten in live_data.php; deze set blijft de fallback zonder $mimirApi.
  */
 
 declare(strict_types=1);
