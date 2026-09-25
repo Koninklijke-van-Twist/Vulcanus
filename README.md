@@ -57,5 +57,5 @@ Deploy: `.github/workflows/deploy-ftp.yml` op push naar `master`. Repo-secrets: 
 
 - **Header:** sentence-case titel, print-tijdstempel, KVT-logo, label:value grid, ordernr + Code128 (alleen cijfers uit `No`)
 - **Regels:** Aantal | Nr. | Omschrijving; `KVT_Extended_Text` als ondertitel; `INSTRUCTIE` verbergt qty; `HR` → UUR
-- Footer: Pagina N
+- Footer: Pagina N via de CSS-paginateller bij afdrukken (niet hardcoded). Lange `KVT_Extended_Text` mag midden in een regel over de pagina lopen; lege regels zonder nr/omschrijving worden niet afgedrukt.
 - Schermhint: `live (Mímir)` of `sample data`

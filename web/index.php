@@ -48,7 +48,7 @@ $backHref = vulcanus_sample_forced() ? 'index.php?sample=1' : 'index.php';
 </head>
 <body>
   <div class="chooser" id="chooser">
-    <img class="chooser-logo" src="assets/kvt-crown.svg" alt="KVT" width="84" height="84">
+    <img class="chooser-logo" src="assets/kvt-logo.png" alt="KVT" width="84" height="84">
     <div id="chooser-body">
     <?php if ($showChoice): ?>
       <p class="entered-no"><?= htmlspecialchars($no, ENT_QUOTES, 'UTF-8') ?></p>

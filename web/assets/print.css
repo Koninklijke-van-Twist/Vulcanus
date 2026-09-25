@@ -54,6 +54,7 @@ html, body {
   width: 84px;
   height: 84px;
   margin: 0 auto 28px;
+  object-fit: contain;
 }
 
 .chooser h1 {
@@ -464,7 +465,13 @@ table.lines tr.instructie td.desc .ext-text {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm;
+    margin: 14mm 12mm 16mm;
+    @bottom-right {
+      content: "Pagina " counter(page);
+      font-family: Arial, Helvetica, "Segoe UI", sans-serif;
+      font-size: 8.5pt;
+      color: #111;
+    }
   }
 
   html, body {
@@ -489,19 +496,27 @@ table.lines tr.instructie td.desc .ext-text {
     display: none !important;
   }
 
+  table.lines,
+  table.lines tbody,
+  table.lines tbody tr,
+  table.lines tbody td {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
   table.lines thead {
     display: table-header-group;
   }
 
-  table.lines tr {
-    page-break-inside: avoid;
-  }
-
   .page-header {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: avoid;
     page-break-after: avoid;
   }
 
   .order-barcode {
+    break-inside: avoid;
     page-break-inside: avoid;
   }
 }

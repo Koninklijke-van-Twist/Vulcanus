@@ -281,6 +281,20 @@ function vulcanus_normalize_record(array $row): array
  * @param list<array<string, mixed>> $lines
  * @return list<array<string, string>>
  */
+/**
+ * Lege BC-regels (geen nr, omschrijving of extended text) niet afdrukken.
+ * Een aantal 0 mét artikelnummer blijft staan.
+ */
+function vulcanus_line_is_blank(array $line): bool
+{
+    foreach (['No', 'Description', 'KVT_Extended_Text'] as $key) {
+        if (trim((string) ($line[$key] ?? '')) !== '') {
+            return false;
+        }
+    }
+    return true;
+}
+
 function vulcanus_normalize_lines(array $lines): array
 {
     $lineKeys = ['Line_No', 'Type', 'No', 'Description', 'Quantity', 'Unit_of_Measure_Code', 'KVT_Extended_Text'];
@@ -434,7 +448,7 @@ function vulcanus_report_loading_document(string $no): string
 </head>
 <body>
   <div class="chooser is-loading screen-only" id="report-loading" aria-busy="true">
-    <img class="chooser-logo" src="assets/kvt-crown.svg" alt="KVT" width="84" height="84">
+    <img class="chooser-logo" src="assets/kvt-logo.png" alt="KVT" width="84" height="84">
     <p class="entered-no">{$noEsc}</p>
     <p class="loading-status" id="loading-status" role="status">
       <span class="spinner" aria-hidden="true"></span>

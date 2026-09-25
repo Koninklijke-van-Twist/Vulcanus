@@ -332,6 +332,34 @@ check(is_string($indexSource) && str_contains($indexSource, 'Opdracht ophalen…
 $css = file_get_contents(__DIR__ . '/../web/assets/print.css');
 check(is_string($css) && str_contains($css, '@keyframes vulcanus-spin'), 'spinner animation lives in print.css');
 check(is_string($css) && str_contains($css, '.spinner') && str_contains($css, 'display: none !important'), 'print rules hide the spinner');
+check(is_string($css) && !preg_match('/table\.lines tr\s*\{[^}]*page-break-inside:\s*avoid/', $css), 'tbody rows are allowed to split across pages');
+check(is_string($css) && str_contains($css, 'counter(page)') && str_contains($css, '@bottom-right'), 'printed page numbers use the page margin counter');
+
+check(vulcanus_line_is_blank([
+    'No' => '',
+    'Description' => '  ',
+    'KVT_Extended_Text' => '',
+    'Quantity' => '0',
+]) === true, 'empty zero-quantity line is not printed');
+check(vulcanus_line_is_blank([
+    'No' => 'PK-T414900',
+    'Description' => 'ACTUATOR',
+    'KVT_Extended_Text' => '',
+    'Quantity' => 0,
+]) === false, 'a real item with quantity 0 still prints');
+check(vulcanus_line_is_blank([
+    'No' => 'INSTRUCTIE',
+    'Description' => '',
+    'KVT_Extended_Text' => "regel\n",
+]) === false, 'instruction text still prints');
+
+foreach (['assemblage.php', 'werkplaatsorder.php', 'index.php', 'lib/live_data.php'] as $page) {
+    $source = file_get_contents(__DIR__ . '/../web/' . $page);
+    check(is_string($source) && !str_contains($source, 'kvt-crown.svg'), $page . ' does not reference the missing crown');
+    check(is_string($source) && !str_contains($source, 'Pagina 1'), $page . ' does not hardcode Pagina 1');
+}
+check(str_contains((string) file_get_contents(__DIR__ . '/../web/index.php'), 'kvt-logo.png'), 'chooser uses the KVT logo');
+check(str_contains((string) file_get_contents(__DIR__ . '/../web/lib/live_data.php'), 'kvt-logo.png'), 'loading shell uses the KVT logo');
 
 reset_mimir_state();
 
