@@ -1,32 +1,22 @@
 <?php
 /**
- * Auth template for Vulcanus.
+ * Kopieer naar web/auth.php op de server (niet committen).
  *
- * Prefer Mímir (no BC credentials needed):
- *   $mimirApi  = 'mimir_…';  // required to activate Mímir
- *   $mimirBase = 'https://sleutels.kvt.nl/mimir/api'; // optional
+ * $allowedUsers:
+ * - weglaten of []  → elke geldige Entra-login heeft toegang
+ * - lijst met e-mails → alleen die accounts
  *
- * With $mimirApi set, the BC vars below are unused.
- * Without $mimirApi, keep the BC block for the legacy OData path
- * (optional once Mímir is wired for LVS_MainWorkOrderCard /
- * Job_Planning_Lines / AssemblageKop / AssemblageRegels).
+ * $mimirApi zet OData-reads via Mímir aan (later).
  */
+// $allowedUsers = [
+//     "user@domain.nl",
+// ];
 
-// --- Mímir (recommended) ---
-// $mimirApi  = 'mimir_…';
-// $mimirBase = 'https://sleutels.kvt.nl/mimir/api';
+$mimirApi  = 'mimir_…';
+$mimirBase = 'https://sleutels.kvt.nl/mimir/api'; // optioneel; dit is de default
 
-// --- Legacy Business Central (only when $mimirApi is not set) ---
-$auth_list =
-    [
-        "env1" => ['mode' => 'basic', 'user' => 'USERNAME', 'pass' => 'PASSWORD'],
-        "env2" => ['mode' => 'basic', 'user' => 'USERNAME', 'pass' => 'PASSWORD'],
-        "env3" => ['mode' => 'basic', 'user' => 'USERNAME', 'pass' => 'PASSWORD']
-    ];
-$environment = "env1";
-$auth = $auth_list[$environment];
-$baseUrl = "https://my-bc-domain.com:7148/";
-
-$allowedUsers = [
-    "user@domain.nl"
-];
+// BC-credentials alleen nodig zolang Mímir nog niet aan staat / voor writes.
+// $auth_list = [ ... ];
+// $environment = "env1";
+// $auth = $auth_list[$environment];
+// $baseUrl = "https://…/";
