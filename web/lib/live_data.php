@@ -19,8 +19,6 @@ const VULCANUS_MIMIR_MAX_AGE = 300;
  */
 const VULCANUS_WO_LINE_SELECT = [
     'Line_No',
-    'LVS_Work_Order_No',
-    'Type',
     'No',
     'Description',
     'Quantity',
@@ -33,13 +31,28 @@ const VULCANUS_WO_LINE_SELECT = [
  */
 const VULCANUS_ASS_LINE_SELECT = [
     'Line_No',
-    'Document_No',
-    'Type',
     'No',
     'Description',
     'Quantity',
     'Unit_of_Measure_Code',
     'KVT_Extended_Text',
+];
+
+/**
+ * @var list<string>
+ */
+const VULCANUS_WO_HEADER_SELECT = [
+    'No',
+    'Main_Entity_Description',
+    'Component_No',
+    'Serial_No',
+    'Task_Description',
+    'Sell_to_Name',
+    'Visit_Address',
+    'Memo',
+    'Created_By',
+    'Created_Date_Time',
+    'End_Date',
 ];
 
 /**
@@ -59,6 +72,24 @@ const VULCANUS_WO_HEADER_KEYS = [
     'End_Date',
     'Status',
     'Start_Date',
+];
+
+/**
+ * @var list<string>
+ */
+const VULCANUS_ASS_HEADER_SELECT = [
+    'No',
+    'Description',
+    'Quantity',
+    'Quantity_to_Assemble',
+    'Assembled_Quantity',
+    'Status',
+    'Due_Date',
+    'Starting_Date',
+    'Location_Code',
+    'Bin_Code',
+    'LVS_Job_No',
+    'Variant_Code',
 ];
 
 /**
@@ -367,7 +398,7 @@ function fetch_werkplaatsorder(string $no): array
     $headers = vulcanus_odata_query(
         'LVS_MainWorkOrderCard',
         mimir_odata_eq('No', $no),
-        [],
+        VULCANUS_WO_HEADER_SELECT,
         VULCANUS_MIMIR_MAX_AGE
     );
     if ($headers === []) {
@@ -409,7 +440,7 @@ function fetch_assemblage(string $no): array
     $headers = vulcanus_odata_query(
         'AssemblageKop',
         mimir_odata_eq('No', $no),
-        [],
+        VULCANUS_ASS_HEADER_SELECT,
         VULCANUS_MIMIR_MAX_AGE
     );
     if ($headers === []) {
