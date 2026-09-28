@@ -161,7 +161,7 @@ check($liveWo['source'] === 'mimir', 'werkplaats source is mimir when enabled');
 check(count($captured->calls) === 2, 'werkplaats issues header and line queries');
 check(($captured->calls[0]['table'] ?? '') === 'LVS_MainWorkOrderCard', 'header table is LVS_MainWorkOrderCard');
 check(($captured->calls[0]['filter'] ?? '') === "No eq 'WO''1'", 'header filter quotes the apostrophe');
-check(!array_key_exists('select', $captured->calls[0]), 'header query does not send select');
+check(($captured->calls[0]['select'] ?? null) === VULCANUS_WO_HEADER_SELECT, 'werkplaats header select');
 check(($captured->calls[0]['company'] ?? '') === 'Koninklijke van Twist', 'default company');
 check(($captured->calls[0]['max_age'] ?? null) === 300, 'interactive max_age is 300');
 check(($captured->calls[0]['top'] ?? null) === 0, 'top 0 asks Mímir for the full set');
@@ -223,6 +223,7 @@ check(($assCaptured->urls[0] ?? '') === 'https://mimir.test/api/query.php', 'mim
 check(($assCaptured->calls[0]['company'] ?? '') === 'Andere BV', 'mimirCompany override');
 check(($assCaptured->calls[0]['table'] ?? '') === 'AssemblageKop', 'assemblage header table');
 check(($assCaptured->calls[0]['filter'] ?? '') === "No eq 'ASS26094567'", 'assemblage header filter');
+check(($assCaptured->calls[0]['select'] ?? null) === VULCANUS_ASS_HEADER_SELECT, 'assemblage header select');
 check(($assCaptured->calls[1]['table'] ?? '') === 'AssemblageRegels', 'assemblage line table');
 check(($assCaptured->calls[1]['filter'] ?? '') === "Document_No eq 'ASS26094567'", 'assemblage line filter');
 check(($assCaptured->calls[1]['select'] ?? null) === VULCANUS_ASS_LINE_SELECT, 'assemblage line select');
