@@ -181,6 +181,9 @@ function mimir_post(array $jsonBody): array
         if ($rawExec === false) {
             $err = curl_error($ch);
             curl_close($ch);
+            if (function_exists('vulcanus_redact_sensitive')) {
+                $err = vulcanus_redact_sensitive($err);
+            }
             throw new Exception('Mímir cURL error: ' . $err);
         }
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -191,6 +194,9 @@ function mimir_post(array $jsonBody): array
     $decoded = json_decode($raw, true);
     if ($code < 200 || $code >= 300) {
         $message = is_array($decoded) ? (string) ($decoded['error'] ?? $raw) : $raw;
+        if (function_exists('vulcanus_redact_sensitive')) {
+            $message = vulcanus_redact_sensitive($message);
+        }
         throw new Exception('Mímir HTTP ' . $code . ': ' . $message);
     }
     if (!is_array($decoded)) {
@@ -201,6 +207,9 @@ function mimir_post(array $jsonBody): array
         $message = is_string($errorField) ? $errorField : (string) json_encode($errorField, JSON_UNESCAPED_UNICODE);
         if ($message === '') {
             $message = 'onbekende fout';
+        }
+        if (function_exists('vulcanus_redact_sensitive')) {
+            $message = vulcanus_redact_sensitive($message);
         }
         throw new Exception('Mímir error: ' . $message);
     }

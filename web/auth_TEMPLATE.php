@@ -16,7 +16,9 @@
  *   https://api.businesscentral.dynamics.com/v2.0/<tenant>/<environment>/ODataV4/
  * Een basis zonder /ODataV4 (https://bc-host:7148/) wordt aangevuld met
  * $environment . '/ODataV4', dezelfde vorm als de andere apps.
- * $auth is basic of ntlm. Ontbreekt een bruikbare $auth, dan geldt $auth_list[$environment].
+ * $auth is basic of ntlm. De fallback gebruikt $auth_list van de environment van het
+ * gevraagde bedrijf (via 'companies' op die entry, of $companyEnvironments), niet
+ * automatisch de primaire $auth. Zonder die koppeling en met één environment geldt die.
  */
 // $allowedUsers = [
 //     "user@domain.nl",
@@ -31,4 +33,11 @@
 // $auth        = ['mode' => 'basic', 'user' => 'USERNAME', 'pass' => 'PASSWORD'];
 // $auth_list   = [
 //     'Production' => ['mode' => 'basic', 'user' => 'USERNAME', 'pass' => 'PASSWORD'],
+//     'Sandbox' => [
+//         'mode' => 'basic',
+//         'user' => 'USERNAME',
+//         'pass' => 'PASSWORD',
+//         'companies' => ['Koninklijke van Twist'],
+//     ],
 // ];
+// $companyEnvironments = ['Koninklijke van Twist' => 'Production'];

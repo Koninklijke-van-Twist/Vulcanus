@@ -317,4 +317,169 @@ if (fallback_count() !== $loggedBeforeLive) {
     fail('een geslaagde Mímir-call mag niets loggen');
 }
 
+$root = 'https://bc.example/ODataV4';
+if (!vulcanus_bc_same_origin('https://bc.example/ODataV4/Company(\'K\')/T?$skip=20', $root)) {
+    fail('zelfde https-origin moet toegestaan zijn');
+}
+if (!vulcanus_bc_same_origin('https://bc.example:443/next', $root)) {
+    fail('impliciete en expliciete poort 443 zijn dezelfde origin');
+}
+foreach ([
+    'http://bc.example/ODataV4/next',
+    'https://evil.example/ODataV4/next',
+    'https://bc.example:8443/next',
+    'https://bcuser:bc-secret@bc.example/next',
+    '//bc.example/next',
+] as $foreign) {
+    if (vulcanus_bc_same_origin($foreign, $root)) {
+        fail('credentials mogen niet naar ' . $foreign);
+    }
+}
+
+$savedBase = $baseUrl;
+$savedEnv = $environment;
+$savedAuth = $auth;
+$savedList = $auth_list;
+$baseUrl = 'https://bc.example/ODataV4';
+$environment = 'Production';
+$auth = ['mode' => 'basic', 'user' => 'bcuser', 'pass' => 'bc-secret'];
+$auth_list = ['Production' => $auth];
+$httpCalls = [];
+$savedFetch = $GLOBALS['VULCANUS_ODATA_BC_FETCH'];
+unset($GLOBALS['VULCANUS_ODATA_BC_FETCH']);
+$GLOBALS['VULCANUS_ODATA_BC_HTTP'] = static function (string $url, array $bcAuth) use (&$httpCalls): array {
+    $httpCalls[] = ['url' => $url, 'user' => (string) ($bcAuth['user'] ?? '')];
+    if (count($httpCalls) === 1) {
+        return [
+            'value' => [['No' => 'A']],
+            '@odata.nextLink' => 'https://evil.example/ODataV4/steal',
+        ];
+    }
+    return ['value' => [['No' => 'B']]];
+};
+$nextError = null;
+try {
+    vulcanus_bc_fetch_all(vulcanus_bc_entity_url('AssemblageKop', "No eq 'A'", []), $auth);
+    fail('een nextLink naar een andere host moet stoppen');
+} catch (Throwable $exception) {
+    $nextError = $exception;
+}
+if (count($httpCalls) !== 1) {
+    fail('de vreemde nextLink kreeg toch credentials, calls=' . count($httpCalls));
+}
+if ($nextError === null || strpos($nextError->getMessage(), 'onveilige origin') === false) {
+    fail('nextLink-fout mist de origin-melding');
+}
+if (strpos($nextError->getMessage(), 'bc-secret') !== false || strpos($nextError->getMessage(), 'Authorization') !== false) {
+    fail('nextLink-fout bevat credentials: ' . $nextError->getMessage());
+}
+$httpCalls = [];
+$GLOBALS['VULCANUS_ODATA_BC_HTTP'] = static function (string $url, array $bcAuth) use (&$httpCalls): array {
+    $httpCalls[] = $url;
+    if (count($httpCalls) === 1) {
+        return [
+            'value' => [['No' => 'A']],
+            '@odata.nextLink' => 'https://bc.example/ODataV4/Company(\'K\')/AssemblageKop?$skip=20',
+        ];
+    }
+    return ['value' => [['No' => 'B']]];
+};
+$paged = vulcanus_bc_fetch_all(vulcanus_bc_entity_url('AssemblageKop', '', []), $auth);
+if (count($paged) !== 2 || ($paged[1]['No'] ?? '') !== 'B' || count($httpCalls) !== 2) {
+    fail('een nextLink op dezelfde https-origin moet wel gevolgd worden');
+}
+unset($GLOBALS['VULCANUS_ODATA_BC_HTTP']);
+$GLOBALS['VULCANUS_ODATA_BC_FETCH'] = $savedFetch;
+
+$basic = base64_encode('bcuser:bc-secret');
+$redacted = vulcanus_redact_sensitive(
+    'Authorization: Basic ' . $basic . "\nBearer mimir_test_key_should_not_leak https://bcuser:bc-secret@bc.example/x"
+);
+if (strpos($redacted, 'bc-secret') !== false || strpos($redacted, $basic) !== false || strpos($redacted, 'mimir_test_key_should_not_leak') !== false) {
+    fail('redactie liet een geheim staan: ' . $redacted);
+}
+if (strpos($redacted, 'bcuser@') !== false) {
+    fail('userinfo bleef in de URL staan: ' . $redacted);
+}
+$loggedBeforeRedact = fallback_count();
+vulcanus_mimir_log_fallback(new Exception('Authorization: Basic ' . $basic . ' bc-secret'));
+if (fallback_count() !== $loggedBeforeRedact + 1) {
+    fail('fallback-log schreef de regel niet');
+}
+assert_no_secrets(fallback_log());
+if (strpos(fallback_log(), $basic) !== false) {
+    fail('log bevat een Authorization-token');
+}
+
+vulcanus_mimir_circuit_reset();
+$mimirApi = 'mimir_test_key_should_not_leak';
+$mimirBase = 'http://127.0.0.1:9';
+$mimirCompany = 'Koninklijke van Twist';
+$baseUrl = 'https://bc.example:7148/';
+$environment = ['Production', 'Sandbox'];
+$auth = ['mode' => 'basic', 'user' => 'primary', 'pass' => 'bc-secret'];
+$auth_list = [
+    'Production' => $auth,
+    'Sandbox' => [
+        'mode' => 'basic',
+        'user' => 'sandboxuser',
+        'pass' => 'bc-secret',
+        'companies' => ['Koninklijke van Twist'],
+    ],
+];
+$beforeCompany = count($calls);
+mimir_set_transport(null);
+$companyRows = vulcanus_odata_query('AssemblageKop', "No eq 'ASS1'", ['No'], 30);
+$companyCall = $calls[count($calls) - 1] ?? null;
+if (($companyRows[0]['No'] ?? '') !== 'WO-1' || !is_array($companyCall) || ($companyCall['user'] ?? '') !== 'sandboxuser') {
+    fail('fallback gebruikte niet de auth_list-entry van het bedrijf: ' . json_encode($companyCall));
+}
+if (!is_array($companyCall) || strpos($companyCall['url'], 'https://bc.example:7148/Sandbox/ODataV4/Company(') !== 0) {
+    fail('fallback gebruikte niet de environment van het bedrijf: ' . json_encode($companyCall));
+}
+if (count($calls) !== $beforeCompany + 1) {
+    fail('company-environment fallback deed niet precies één directe call');
+}
+
+$auth_list = [
+    'Production' => $auth,
+    'Sandbox' => ['mode' => 'basic', 'user' => 'sandboxuser', 'pass' => 'bc-secret'],
+];
+if (vulcanus_bc_environment_for_company('Koninklijke van Twist') !== null) {
+    fail('zonder bedrijfskoppeling mag de primaire environment niet gegokt worden');
+}
+vulcanus_mimir_circuit_reset();
+$callsBeforeGuess = count($calls);
+$guessError = null;
+try {
+    vulcanus_odata_query('AssemblageKop', "No eq 'ASS1'", [], 30);
+    fail('zonder environment voor het bedrijf moet de Mímir-fout terugkomen');
+} catch (Throwable $exception) {
+    $guessError = $exception;
+}
+if ($guessError === null || strpos($guessError->getMessage(), 'Mímir') === false || count($calls) !== $callsBeforeGuess) {
+    fail('onbekende company-environment viel toch terug op de primaire auth');
+}
+
+$publishedBase = $GLOBALS['baseUrl'] ?? null;
+$publishedEnv = $GLOBALS['environment'] ?? null;
+vulcanus_publish_bc_auth_globals([
+    'baseUrl' => 'https://published.example/ODataV4',
+    'environment' => 'Sandbox',
+    'auth' => ['mode' => 'basic', 'user' => 'from-file', 'pass' => 'bc-secret'],
+    'noise' => 'niet-publiceren',
+]);
+if (($GLOBALS['baseUrl'] ?? '') !== 'https://published.example/ODataV4' || ($GLOBALS['environment'] ?? '') !== 'Sandbox') {
+    fail('lazy auth.php-variabelen werden niet naar $GLOBALS gekopieerd');
+}
+if (isset($GLOBALS['noise'])) {
+    fail('publish kopieerde een variabele buiten de BC-lijst');
+}
+$GLOBALS['baseUrl'] = $publishedBase;
+$GLOBALS['environment'] = $publishedEnv;
+$baseUrl = $savedBase;
+$environment = $savedEnv;
+$auth = $savedAuth;
+$auth_list = $savedList;
+
 echo "OK\n";
