@@ -1,15 +1,15 @@
 <?php
 /**
- * Live Business Central-reads via Mímir, met sample-fallback.
+ * Live Business Central-reads via Mímir, met directe BC-fallback en sample-fallback.
  *
- * Zonder $mimirApi, of met ?sample=1, blijven de bestaande sample_* functies gelden.
+ * Zonder $mimirApi én zonder BC-credentials, of met ?sample=1, blijven de sample_* functies gelden.
  * Interactieve rapporten gebruiken max_age 300 (vijf minuten Mímir-cache).
  */
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/sample_data.php';
-require_once __DIR__ . '/../odata.php';
+require_once __DIR__ . '/../odata_fallback.php';
 
 /** Seconden die Mímir een interactieve rapportload mag cachen. */
 const VULCANUS_MIMIR_MAX_AGE = 300;
@@ -97,7 +97,7 @@ function vulcanus_mimir_enabled(): bool
 }
 
 /**
- * ?sample=1 forceert sample-data, ook als Mímir aan staat.
+ * ?sample=1 forceert sample-data, ook als Mímir of directe BC aan staat.
  */
 function vulcanus_sample_forced(): bool
 {
@@ -110,7 +110,13 @@ function vulcanus_sample_forced(): bool
 
 function vulcanus_use_mimir(): bool
 {
-    return vulcanus_mimir_enabled() && !vulcanus_sample_forced();
+    if (vulcanus_sample_forced()) {
+        return false;
+    }
+    if (vulcanus_mimir_enabled()) {
+        return true;
+    }
+    return function_exists('vulcanus_bc_credentials_configured') && vulcanus_bc_credentials_configured();
 }
 
 /**
@@ -188,7 +194,13 @@ function vulcanus_redirect_to_report(string $type, string $no): never
 
 function vulcanus_source_label(string $source): string
 {
-    return $source === 'mimir' ? 'live (Mímir)' : 'sample data';
+    if ($source === 'mimir') {
+        return 'live (Mímir)';
+    }
+    if ($source === 'bc') {
+        return 'live (Business Central)';
+    }
+    return 'sample data';
 }
 
 /**
@@ -340,7 +352,7 @@ function vulcanus_ensure_no(array $header, string $no, array $keys): array
 }
 
 /**
- * @return array{header: array<string, string>, lines: list<array<string, string>>, source: 'mimir'|'sample'}
+ * @return array{header: array<string, string>, lines: list<array<string, string>>, source: 'mimir'|'bc'|'sample'}
  */
 function fetch_werkplaatsorder(string $no): array
 {
@@ -352,7 +364,7 @@ function fetch_werkplaatsorder(string $no): array
         ];
     }
 
-    $headers = mimir_query(
+    $headers = vulcanus_odata_query(
         'LVS_MainWorkOrderCard',
         mimir_odata_eq('No', $no),
         [],
@@ -362,7 +374,7 @@ function fetch_werkplaatsorder(string $no): array
         throw new VulcanusNotFoundException('werkplaatsorder', $no);
     }
 
-    $lines = mimir_query(
+    $lines = vulcanus_odata_query(
         'Job_Planning_Lines',
         mimir_odata_eq('LVS_Work_Order_No', $no),
         VULCANUS_WO_LINE_SELECT,
@@ -372,12 +384,12 @@ function fetch_werkplaatsorder(string $no): array
     return [
         'header' => vulcanus_ensure_no(vulcanus_normalize_record($headers[0]), $no, VULCANUS_WO_HEADER_KEYS),
         'lines' => vulcanus_normalize_lines($lines),
-        'source' => 'mimir',
+        'source' => vulcanus_odata_source(),
     ];
 }
 
 /**
- * @return array{header: array<string, string>, lines: list<array<string, string>>, source: 'mimir'|'sample'}
+ * @return array{header: array<string, string>, lines: list<array<string, string>>, source: 'mimir'|'bc'|'sample'}
  */
 function fetch_assemblage(string $no): array
 {
@@ -394,7 +406,7 @@ function fetch_assemblage(string $no): array
         ];
     }
 
-    $headers = mimir_query(
+    $headers = vulcanus_odata_query(
         'AssemblageKop',
         mimir_odata_eq('No', $no),
         [],
@@ -404,7 +416,7 @@ function fetch_assemblage(string $no): array
         throw new VulcanusNotFoundException('assemblageorder', $no);
     }
 
-    $lines = mimir_query(
+    $lines = vulcanus_odata_query(
         'AssemblageRegels',
         mimir_odata_eq('Document_No', $no),
         VULCANUS_ASS_LINE_SELECT,
@@ -414,7 +426,7 @@ function fetch_assemblage(string $no): array
     return [
         'header' => vulcanus_ensure_no(vulcanus_normalize_record($headers[0]), $no, VULCANUS_ASS_HEADER_KEYS),
         'lines' => vulcanus_normalize_lines($lines),
-        'source' => 'mimir',
+        'source' => vulcanus_odata_source(),
     ];
 }
 

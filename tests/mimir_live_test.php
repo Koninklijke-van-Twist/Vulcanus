@@ -27,8 +27,13 @@ function reset_mimir_state(): void
 {
     $GLOBALS['mimirApi'] = '';
     unset($GLOBALS['mimirBase'], $GLOBALS['mimirCompany']);
+    unset($GLOBALS['baseUrl'], $GLOBALS['environment'], $GLOBALS['auth'], $GLOBALS['auth_list']);
+    unset($GLOBALS['VULCANUS_ODATA_BC_FETCH']);
     unset($_GET['sample'], $_GET['_content']);
     mimir_set_transport(null);
+    if (function_exists('vulcanus_mimir_circuit_reset')) {
+        vulcanus_mimir_circuit_reset();
+    }
 }
 
 function capture_transport(callable $responder): stdClass
@@ -167,7 +172,7 @@ check(str_ends_with($captured->urls[0] ?? '', '/query.php'), 'posts to query.php
 check(($captured->urls[0] ?? '') === 'https://sleutels.kvt.nl/mimir/api/query.php', 'default Mímir base URL');
 check(($captured->options[0][CURLOPT_FOLLOWLOCATION] ?? null) === false, 'redirects are not followed');
 check(($captured->options[0][CURLOPT_USERAGENT] ?? '') === 'Vulcanus-MimirClient/1.0', 'Vulcanus user agent');
-check(($captured->options[0][CURLOPT_CONNECTTIMEOUT] ?? 0) === 30, 'connect timeout 30');
+check(($captured->options[0][CURLOPT_CONNECTTIMEOUT] ?? 0) === 10, 'connect timeout 10');
 check(($captured->options[0][CURLOPT_TIMEOUT] ?? 0) === 600, 'total timeout 600');
 $headers = $captured->options[0][CURLOPT_HTTPHEADER] ?? [];
 check(in_array('Authorization: Bearer mimir_test_key', $headers, true), 'bearer auth header');
