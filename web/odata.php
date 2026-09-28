@@ -3,7 +3,8 @@
  * Slim Mímir-client voor Vulcanus.
  *
  * Actief alleen als $mimirApi in auth.php een niet-lege string is.
- * Zonder sleutel blijven de rapporten op sample-data.
+ * Faalt de aanroep, dan valt web/odata_fallback.php terug op directe BC OData.
+ * Zonder sleutel én zonder BC-credentials blijven de rapporten op sample-data.
  *
  * Optioneel in auth.php:
  *   $mimirBase    = 'https://sleutels.kvt.nl/mimir/api'; // alleen https
@@ -37,13 +38,36 @@ function mimir_base_url(): string
     global $mimirBase;
     if (isset($mimirBase) && is_string($mimirBase) && trim($mimirBase) !== '') {
         $base = rtrim(trim($mimirBase), '/');
-        $scheme = parse_url($base, PHP_URL_SCHEME);
-        if (!is_string($scheme) || strcasecmp($scheme, 'https') !== 0) {
+        if (!mimir_base_url_allowed($base)) {
             throw new Exception('Mímir-basis-URL moet https zijn ($mimirBase).');
         }
         return $base;
     }
     return 'https://sleutels.kvt.nl/mimir/api';
+}
+
+/**
+ * https altijd. http alleen naar loopback, zodat een lokale test Mímir op
+ * 127.0.0.1 kan laten weigeren zonder de sleutel naar een andere host te sturen.
+ */
+function mimir_base_url_allowed(string $base): bool
+{
+    $scheme = parse_url($base, PHP_URL_SCHEME);
+    if (!is_string($scheme)) {
+        return false;
+    }
+    if (strcasecmp($scheme, 'https') === 0) {
+        return true;
+    }
+    if (strcasecmp($scheme, 'http') !== 0) {
+        return false;
+    }
+    $host = parse_url($base, PHP_URL_HOST);
+    if (!is_string($host)) {
+        return false;
+    }
+    $host = strtolower($host);
+    return $host === '127.0.0.1' || $host === 'localhost' || $host === '::1';
 }
 
 function mimir_company(): string
@@ -90,11 +114,20 @@ function mimir_set_transport(?callable $transport): void
  */
 function mimir_curl_options(string $payload, array $headers): array
 {
+    $connectTimeout = 10;
+    $timeout = strtolower(PHP_SAPI) === 'cli' ? 600 : 90;
+    if (function_exists('vulcanus_mimir_connect_timeout_seconds')) {
+        $connectTimeout = vulcanus_mimir_connect_timeout_seconds();
+    }
+    if (function_exists('vulcanus_mimir_timeout_seconds')) {
+        $timeout = vulcanus_mimir_timeout_seconds();
+    }
+
     return [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_CONNECTTIMEOUT => 30,
-        CURLOPT_TIMEOUT => 600,
+        CURLOPT_CONNECTTIMEOUT => $connectTimeout,
+        CURLOPT_TIMEOUT => $timeout,
         CURLOPT_CUSTOMREQUEST => 'POST',
         CURLOPT_HTTPHEADER => $headers,
         CURLOPT_POSTFIELDS => $payload,
@@ -148,6 +181,9 @@ function mimir_post(array $jsonBody): array
         if ($rawExec === false) {
             $err = curl_error($ch);
             curl_close($ch);
+            if (function_exists('vulcanus_redact_sensitive')) {
+                $err = vulcanus_redact_sensitive($err);
+            }
             throw new Exception('Mímir cURL error: ' . $err);
         }
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -158,10 +194,24 @@ function mimir_post(array $jsonBody): array
     $decoded = json_decode($raw, true);
     if ($code < 200 || $code >= 300) {
         $message = is_array($decoded) ? (string) ($decoded['error'] ?? $raw) : $raw;
+        if (function_exists('vulcanus_redact_sensitive')) {
+            $message = vulcanus_redact_sensitive($message);
+        }
         throw new Exception('Mímir HTTP ' . $code . ': ' . $message);
     }
     if (!is_array($decoded)) {
         throw new Exception('Mímir gaf ongeldige JSON terug.');
+    }
+    $errorField = $decoded['error'] ?? null;
+    if ($errorField !== null && $errorField !== '' && $errorField !== false) {
+        $message = is_string($errorField) ? $errorField : (string) json_encode($errorField, JSON_UNESCAPED_UNICODE);
+        if ($message === '') {
+            $message = 'onbekende fout';
+        }
+        if (function_exists('vulcanus_redact_sensitive')) {
+            $message = vulcanus_redact_sensitive($message);
+        }
+        throw new Exception('Mímir error: ' . $message);
     }
     return $decoded;
 }
