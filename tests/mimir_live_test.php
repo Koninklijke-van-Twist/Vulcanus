@@ -414,13 +414,25 @@ check(is_string($css) && str_contains($css, 'counter(page)') && str_contains($cs
 check(is_string($css) && str_contains($css, 'min-height: 0') && str_contains($css, 'overflow: visible'), 'print sheet drops the screen A4 min-height so it cannot clip');
 check(is_string($css) && preg_match('/table\.lines td \{[^}]*padding:\s*1px 4px;/', $css) === 1, 'line rows use tight vertical padding');
 check(is_string($css) && preg_match('/table\.lines td\.desc \.ext-text \{[^}]*white-space:\s*normal;/', $css) === 1, 'extended text does not keep pre-wrap line breaks');
-check(is_string($css) && str_contains($css, '.header-meta > .customer-line'), 'customer name spans the header grid');
+check(is_string($css) && str_contains($css, '.customer-line') && !str_contains($css, '.header-meta > .customer-line'), 'customer line sits outside the header grid');
+check(is_string($css) && preg_match('/\.customer-line \{[^}]*min-height\s*:/', $css) !== 1, 'customer line does not reserve a min-height');
+check(is_string($css) && preg_match('/\.memo-block \{[^}]*white-space:\s*normal;/', $css) === 1, 'memo does not keep pre-wrap line breaks');
 
 foreach (['werkplaatsorder.php', 'assemblage.php'] as $reportPage) {
     $reportSource = file_get_contents(__DIR__ . '/../web/' . $reportPage);
     check(is_string($reportSource) && str_contains($reportSource, 'vulcanus_customer_name($header)'), $reportPage . ' prints the customer name');
     check(is_string($reportSource) && str_contains($reportSource, '>Klant<'), $reportPage . ' labels the customer name');
+    check(
+        is_string($reportSource) && preg_match('/class="customer-line".*class="header-meta/s', $reportSource) === 1,
+        $reportPage . ' places the customer line above the header grid'
+    );
 }
+
+check(vulcanus_collapse_blank_lines("\n\n\nLet op: x\n\n\n\n") === 'Let op: x', 'leading and trailing blank lines collapse');
+check(vulcanus_collapse_blank_lines("a\n\n\n\nb") === "a\n\nb", 'internal blank runs become one blank line');
+check(vulcanus_collapse_blank_lines("a\n   \n\n  \nb") === "a\n\nb", 'whitespace-only lines count as blank');
+check(nl2br_h("a\n\n\n\nb") === 'a<br><br>b', 'rendered breaks collapse and drop raw newlines');
+check(!str_contains(nl2br_h("regel 1\r\n\r\n\r\nregel 2"), "\n"), 'CRLF memo does not keep newline characters');
 
 check(vulcanus_line_is_blank([
     'No' => '',

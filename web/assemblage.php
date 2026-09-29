@@ -50,6 +50,7 @@ $barcodeSvg  = render_code128b_svg($barcodeText, 2, 36, false);
 
 $title = 'Assemblageopdracht';
 $printedAt = print_timestamp();
+$customerName = vulcanus_customer_name($header);
 $gedaan = (string) $header['Assembled_Quantity'] . '/' . (string) $header['Quantity'];
 ?>
 <!DOCTYPE html>
@@ -58,7 +59,7 @@ $gedaan = (string) $header['Assembled_Quantity'] . '/' . (string) $header['Quant
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vulcanus – <?= h($title) ?> <?= h($header['No']) ?></title>
-  <link rel="stylesheet" href="assets/print.css">
+  <link rel="stylesheet" href="assets/print.css?v=7">
 </head>
 <body>
   <p class="no-print-hint screen-only">
@@ -82,8 +83,9 @@ $gedaan = (string) $header['Assembled_Quantity'] . '/' . (string) $header['Quant
       </div>
       <hr class="rule-solid">
 
+      <div class="customer-line"><span class="lbl">Klant</span><span class="val"><?= h($customerName) ?></span></div>
+
       <div class="header-meta cols-3" aria-label="Assemblagegegevens">
-        <div class="row customer-line"><span class="lbl">Klant</span><span class="val"><?= h(vulcanus_customer_name($header)) ?></span></div>
         <div class="col">
           <div class="row"><span class="lbl">Datum</span><span class="val"><?= h($header['Starting_Date']) ?></span></div>
           <div class="row"><span class="lbl">Opleverdatum</span><span class="val"><?= h($header['Due_Date']) ?></span></div>

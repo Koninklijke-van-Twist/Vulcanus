@@ -298,14 +298,41 @@ function h(?string $s): string
     return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** Multiline memo/extended text → HTML met <br> */
+/**
+ * Lege regels boven/onder weg, en meer dan één lege regel tussen alinea's
+ * tot één. Anders houdt de print een lege blokhoogte vast (memo, instructie).
+ */
+function vulcanus_collapse_blank_lines(string $s): string
+{
+    $s = str_replace(["\r\n", "\r"], "\n", $s);
+    $lines = explode("\n", $s);
+    $out = [];
+    $blank = 0;
+    foreach ($lines as $line) {
+        if (trim($line) === '') {
+            $blank++;
+            continue;
+        }
+        if ($out !== [] && $blank > 0) {
+            $out[] = '';
+        }
+        $blank = 0;
+        $out[] = rtrim($line);
+    }
+    return implode("\n", $out);
+}
+
+/**
+ * Multiline memo/extended text → HTML met <br>.
+ * De ruwe newlines gaan eruit, anders telt pre-wrap ze een tweede keer.
+ */
 function nl2br_h(?string $s): string
 {
-    $s = (string) $s;
+    $s = vulcanus_collapse_blank_lines((string) $s);
     if ($s === '') {
         return '';
     }
-    return nl2br(h($s), false);
+    return str_replace("\n", '<br>', h($s));
 }
 
 /** Print-tijdstempel in US-achtige vorm zoals PDF-voorbeeld */

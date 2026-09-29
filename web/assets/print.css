@@ -218,7 +218,7 @@ html, body {
 
 /* —— Compact PDF-like report header —— */
 .page-header {
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 }
 
 .page-header-top {
@@ -261,13 +261,13 @@ html, body {
 .rule-solid {
   border: none;
   border-top: 1px solid var(--ink);
-  margin: 4px 0 6px;
+  margin: 3px 0 4px;
 }
 
 .rule-dotted {
   border: none;
   border-top: 1px dotted var(--dot);
-  margin: 6px 0;
+  margin: 2px 0;
 }
 
 /* Tight label:value grid — no boxed kv cards */
@@ -275,7 +275,8 @@ html, body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px 28px;
-  margin: 0 0 4px;
+  align-items: start;
+  margin: 0 0 2px;
   font-size: 9pt;
   line-height: 1.35;
 }
@@ -317,17 +318,30 @@ html, body {
   line-height: 1.35;
 }
 
-.header-meta > .customer-line {
-  grid-column: 1 / -1;
+/* Buiten het kolomraster: een korte klantregel mag geen rijhoogte
+   van de datumkolom reserveren (lege rechthoek onder de naam). */
+.customer-line {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 6px;
+  align-items: baseline;
+  margin: 0 0 1px;
+  font-size: 9pt;
+  line-height: 1.25;
 }
 
-.header-meta > .customer-line .val {
+.customer-line .lbl::after {
+  content: ":";
+}
+
+.customer-line .val {
   font-weight: 700;
+  word-break: break-word;
 }
 
 /* Order number + barcode under header fields */
 .order-barcode {
-  margin: 4px 0 2px;
+  margin: 2px 0 0;
   max-width: 55%;
 }
 
@@ -348,13 +362,13 @@ html, body {
 
 /* Memo as free body text (no card chrome) */
 .memo-block {
-  margin: 4px 0 8px;
+  margin: 0;
   padding: 0;
   border: none;
   background: transparent;
   font-size: 9pt;
-  line-height: 1.35;
-  white-space: pre-wrap;
+  line-height: 1.25;
+  white-space: normal;
 }
 
 .memo-block .memo-title {

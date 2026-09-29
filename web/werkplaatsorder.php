@@ -46,6 +46,9 @@ $barcodeSvg  = render_code128b_svg($barcodeText, 2, 36, false);
 
 $title = 'Werkplaatsopdracht';
 $printedAt = print_timestamp();
+$customerName = vulcanus_customer_name($header);
+$visitAddress = trim((string) ($header['Visit_Address'] ?? ''));
+$memo = vulcanus_collapse_blank_lines((string) ($header['Memo'] ?? ''));
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -53,7 +56,7 @@ $printedAt = print_timestamp();
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vulcanus – <?= h($title) ?> <?= h($header['No']) ?></title>
-  <link rel="stylesheet" href="assets/print.css">
+  <link rel="stylesheet" href="assets/print.css?v=7">
 </head>
 <body>
   <p class="no-print-hint screen-only">
@@ -73,8 +76,9 @@ $printedAt = print_timestamp();
       </div>
       <hr class="rule-solid">
 
+      <div class="customer-line"><span class="lbl">Klant</span><span class="val"><?= h($customerName) ?></span></div>
+
       <div class="header-meta" aria-label="Werkordergegevens">
-        <div class="row customer-line"><span class="lbl">Klant</span><span class="val"><?= h(vulcanus_customer_name($header)) ?></span></div>
         <div class="col">
           <div class="row"><span class="lbl">Datum</span><span class="val"><?= h($header['Created_Date_Time']) ?></span></div>
           <div class="row"><span class="lbl">Aangemaakt door</span><span class="val"><?= h($header['Created_By']) ?></span></div>
@@ -82,7 +86,9 @@ $printedAt = print_timestamp();
           <div class="row"><span class="lbl">Taak</span><span class="val"><?= h($header['Task_Description']) ?></span></div>
         </div>
         <div class="col">
-          <div class="plain"><?= h($header['Visit_Address']) ?></div>
+          <?php if ($visitAddress !== ''): ?>
+          <div class="plain"><?= h($visitAddress) ?></div>
+          <?php endif; ?>
           <div class="row"><span class="lbl">SN</span><span class="val"><?= h($header['Serial_No']) ?></span></div>
           <div class="row"><span class="lbl">Comp</span><span class="val"><?= h($header['Component_No']) ?></span></div>
           <div class="row"><span class="lbl">Servicelocatie</span><span class="val"><?= h($header['Main_Entity_Description']) ?></span></div>
@@ -97,9 +103,9 @@ $printedAt = print_timestamp();
 
     <hr class="rule-dotted">
 
-    <?php if (trim((string) ($header['Memo'] ?? '')) !== ''): ?>
+    <?php if ($memo !== ''): ?>
     <aside class="memo-block">
-      <div class="memo-body"><?= nl2br_h($header['Memo']) ?></div>
+      <div class="memo-body"><?= nl2br_h($memo) ?></div>
     </aside>
     <hr class="rule-dotted">
     <?php endif; ?>
