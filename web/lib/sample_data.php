@@ -18,6 +18,7 @@ function sample_werkplaatsorder_header(string $no = 'WO26091234'): array
         'Component_No'             => '10087766',
         'Serial_No'                => '42-PW1106-R043184K',
         'Task_Description'         => 'Hencon Reparatie Motor',
+        'Bill_to_Name'             => 'HENCON SERVICES BV',
         'Sell_to_Name'             => 'HENCON SERVICES BV',
         'Visit_Address'            => 'UNKNOWN - NIET AANPASSEN',
         'Memo'                     => sample_werkplaats_memo(),
@@ -137,6 +138,7 @@ function sample_assemblage_header(string $no = 'ASS26094567'): array
         'Unit_of_Measure_Code'  => 'ST',
         'LVS_Job_No'            => '20-15202129',
         'Variant_Code'          => '44.3',
+        'Bill_to_Name'          => 'DEMO KLANT BV',
     ];
 }
 

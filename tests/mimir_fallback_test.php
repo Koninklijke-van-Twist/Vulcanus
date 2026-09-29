@@ -99,8 +99,8 @@ $liveSource = (string) file_get_contents(dirname(__DIR__) . '/web/lib/live_data.
 if (strpos($liveSource, 'mimir_query(') !== false) {
     fail('live_data.php roept mimir_query nog rechtstreeks aan');
 }
-if (substr_count($liveSource, 'vulcanus_odata_query(') !== 4) {
-    fail('werkplaats en assemblage moeten alle vier de queries via de helper doen');
+if (substr_count($liveSource, 'vulcanus_odata_query(') !== 5) {
+    fail('werkplaats, assemblage en de project-klantlookup moeten via de helper lopen');
 }
 foreach (['assemblage.php', 'werkplaatsorder.php'] as $page) {
     $pageSource = (string) file_get_contents(dirname(__DIR__) . '/web/' . $page);

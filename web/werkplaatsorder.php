@@ -74,6 +74,7 @@ $printedAt = print_timestamp();
       <hr class="rule-solid">
 
       <div class="header-meta" aria-label="Werkordergegevens">
+        <div class="row customer-line"><span class="lbl">Klant</span><span class="val"><?= h(vulcanus_customer_name($header)) ?></span></div>
         <div class="col">
           <div class="row"><span class="lbl">Datum</span><span class="val"><?= h($header['Created_Date_Time']) ?></span></div>
           <div class="row"><span class="lbl">Aangemaakt door</span><span class="val"><?= h($header['Created_By']) ?></span></div>
@@ -81,7 +82,6 @@ $printedAt = print_timestamp();
           <div class="row"><span class="lbl">Taak</span><span class="val"><?= h($header['Task_Description']) ?></span></div>
         </div>
         <div class="col">
-          <div class="plain"><?= h($header['Sell_to_Name']) ?></div>
           <div class="plain"><?= h($header['Visit_Address']) ?></div>
           <div class="row"><span class="lbl">SN</span><span class="val"><?= h($header['Serial_No']) ?></span></div>
           <div class="row"><span class="lbl">Comp</span><span class="val"><?= h($header['Component_No']) ?></span></div>

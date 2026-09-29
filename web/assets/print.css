@@ -317,6 +317,14 @@ html, body {
   line-height: 1.35;
 }
 
+.header-meta > .customer-line {
+  grid-column: 1 / -1;
+}
+
+.header-meta > .customer-line .val {
+  font-weight: 700;
+}
+
 /* Order number + barcode under header fields */
 .order-barcode {
   margin: 4px 0 2px;
@@ -362,6 +370,7 @@ table.lines {
   width: 100%;
   border-collapse: collapse;
   font-size: 9pt;
+  line-height: 1.15;
   margin-top: 2px;
 }
 
@@ -373,7 +382,7 @@ table.lines thead th {
   letter-spacing: 0.02em;
   color: var(--muted);
   border-bottom: 1px solid var(--ink);
-  padding: 3px 5px 4px;
+  padding: 1px 4px 2px;
 }
 
 table.lines thead {
@@ -382,7 +391,7 @@ table.lines thead {
 
 table.lines td {
   vertical-align: top;
-  padding: 4px 5px 5px;
+  padding: 1px 4px;
   border-bottom: 1px solid #e6e6e6;
 }
 
@@ -407,16 +416,17 @@ table.lines td.desc .desc-main {
   font-weight: 500;
 }
 
-/* Extended text: readable subtitle (Tim prefers our style, not microscopic) */
+/* Extended text: readable subtitle. nl2br already inserts the breaks;
+   pre-wrap would keep the original newlines as well and double the gap. */
 table.lines td.desc .ext-text {
   display: block;
-  margin-top: 3px;
+  margin-top: 1px;
   font-size: 8.5pt;
   font-style: normal;
   font-weight: 400;
   color: var(--muted);
-  white-space: pre-wrap;
-  line-height: 1.32;
+  white-space: normal;
+  line-height: 1.2;
 }
 
 table.lines tr.instructie td.qty {
@@ -430,7 +440,7 @@ table.lines tr.instructie td.desc .desc-main {
 table.lines tr.instructie td.desc .ext-text {
   font-size: 9pt;
   color: var(--ink);
-  margin-top: 4px;
+  margin-top: 1px;
 }
 
 /* Footer */
