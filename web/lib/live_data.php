@@ -47,6 +47,7 @@ const VULCANUS_WO_HEADER_SELECT = [
     'Component_No',
     'Serial_No',
     'Task_Description',
+    'Bill_to_Name',
     'Sell_to_Name',
     'Visit_Address',
     'Memo',
@@ -64,6 +65,7 @@ const VULCANUS_WO_HEADER_KEYS = [
     'Component_No',
     'Serial_No',
     'Task_Description',
+    'Bill_to_Name',
     'Sell_to_Name',
     'Visit_Address',
     'Memo',
@@ -93,6 +95,16 @@ const VULCANUS_ASS_HEADER_SELECT = [
 ];
 
 /**
+ * Klantnaam van het gekoppelde project (Projecten.No = AssemblageKop.LVS_Job_No).
+ * AssemblageKop zelf heeft geen sell-to/bill-to-veld.
+ *
+ * @var list<string>
+ */
+const VULCANUS_PROJECT_CUSTOMER_SELECT = [
+    'Bill_to_Name',
+];
+
+/**
  * @var list<string>
  */
 const VULCANUS_ASS_HEADER_KEYS = [
@@ -110,6 +122,7 @@ const VULCANUS_ASS_HEADER_KEYS = [
     'Unit_of_Measure_Code',
     'LVS_Job_No',
     'Variant_Code',
+    'Bill_to_Name',
 ];
 
 class VulcanusNotFoundException extends RuntimeException
@@ -321,9 +334,58 @@ function vulcanus_normalize_record(array $row): array
 }
 
 /**
- * @param list<array<string, mixed>> $lines
- * @return list<array<string, string>>
+ * Klantnaam voor de printheader. Bill-to is de klant op LVS_MainWorkOrderCard
+ * (zelfde veld als AM-Hub/Demeter). Sell-to vult aan als bill-to leeg is.
+ *
+ * @param array<string, mixed> $header
  */
+function vulcanus_customer_name(array $header): string
+{
+    foreach (['Bill_to_Name', 'Sell_to_Name', 'Sell_to_Customer_Name', 'Customer_Name'] as $key) {
+        $name = trim((string) ($header[$key] ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+    }
+    return '';
+}
+
+/**
+ * AssemblageKop levert geen klantnaam. Het project achter LVS_Job_No wel
+ * (Projecten.Bill_to_Name). Een mislukte lookup laat het rapport staan.
+ *
+ * @param array<string, string> $header
+ * @return array<string, string>
+ */
+function vulcanus_attach_project_customer(array $header): array
+{
+    if (vulcanus_customer_name($header) !== '') {
+        return $header;
+    }
+    $jobNo = trim((string) ($header['LVS_Job_No'] ?? ''));
+    if ($jobNo === '') {
+        return $header;
+    }
+    try {
+        $rows = vulcanus_odata_query(
+            'Projecten',
+            mimir_odata_eq('No', $jobNo),
+            VULCANUS_PROJECT_CUSTOMER_SELECT,
+            VULCANUS_MIMIR_MAX_AGE
+        );
+    } catch (Throwable $e) {
+        return $header;
+    }
+    if ($rows === []) {
+        return $header;
+    }
+    $name = trim((string) (vulcanus_normalize_record($rows[0])['Bill_to_Name'] ?? ''));
+    if ($name !== '') {
+        $header['Bill_to_Name'] = $name;
+    }
+    return $header;
+}
+
 /**
  * Lege BC-regels (geen nr, omschrijving of extended text) niet afdrukken.
  * Een aantal 0 mét artikelnummer blijft staan.
@@ -338,6 +400,10 @@ function vulcanus_line_is_blank(array $line): bool
     return true;
 }
 
+/**
+ * @param list<array<string, mixed>> $lines
+ * @return list<array<string, string>>
+ */
 function vulcanus_normalize_lines(array $lines): array
 {
     $lineKeys = ['Line_No', 'Type', 'No', 'Description', 'Quantity', 'Unit_of_Measure_Code', 'KVT_Extended_Text'];
@@ -454,10 +520,13 @@ function fetch_assemblage(string $no): array
         VULCANUS_MIMIR_MAX_AGE
     );
 
+    $header = vulcanus_ensure_no(vulcanus_normalize_record($headers[0]), $no, VULCANUS_ASS_HEADER_KEYS);
+    $source = vulcanus_odata_source();
+
     return [
-        'header' => vulcanus_ensure_no(vulcanus_normalize_record($headers[0]), $no, VULCANUS_ASS_HEADER_KEYS),
+        'header' => vulcanus_attach_project_customer($header),
         'lines' => vulcanus_normalize_lines($lines),
-        'source' => vulcanus_odata_source(),
+        'source' => $source,
     ];
 }
 

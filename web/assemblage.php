@@ -83,6 +83,7 @@ $gedaan = (string) $header['Assembled_Quantity'] . '/' . (string) $header['Quant
       <hr class="rule-solid">
 
       <div class="header-meta cols-3" aria-label="Assemblagegegevens">
+        <div class="row customer-line"><span class="lbl">Klant</span><span class="val"><?= h(vulcanus_customer_name($header)) ?></span></div>
         <div class="col">
           <div class="row"><span class="lbl">Datum</span><span class="val"><?= h($header['Starting_Date']) ?></span></div>
           <div class="row"><span class="lbl">Opleverdatum</span><span class="val"><?= h($header['Due_Date']) ?></span></div>

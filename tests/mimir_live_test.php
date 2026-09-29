@@ -91,11 +91,16 @@ $sampleWo = fetch_werkplaatsorder('WO26091234');
 check($sampleWo['source'] === 'sample', 'werkplaats uses sample when Mímir is off');
 check($sampleWo['header']['No'] === 'WO26091234', 'sample werkplaats header keeps the requested number');
 check(($sampleWo['lines'][0]['No'] ?? '') === 'PK-T414086', 'sample werkplaats lines stay available');
+check(vulcanus_customer_name($sampleWo['header']) === 'HENCON SERVICES BV', 'sample werkplaats shows the customer name');
 
 $sampleAss = fetch_assemblage('ASS999');
 check($sampleAss['source'] === 'sample', 'assemblage uses sample when Mímir is off');
 check($sampleAss['header']['No'] === 'ASS999', 'sample assemblage header keeps the requested number');
 check(($sampleAss['lines'][0]['Document_No'] ?? '') === 'ASS999', 'sample assemblage lines adopt the requested number');
+check(vulcanus_customer_name($sampleAss['header']) === 'DEMO KLANT BV', 'sample assemblage shows the customer name');
+check(vulcanus_customer_name(['Bill_to_Name' => ' Factuurklant ', 'Sell_to_Name' => 'Verkoopklant']) === 'Factuurklant', 'Bill_to_Name wins as klantnaam');
+check(vulcanus_customer_name(['Sell_to_Name' => 'Verkoopklant']) === 'Verkoopklant', 'Sell_to_Name fills in when bill-to is empty');
+check(vulcanus_customer_name(['Bill_to_Name' => '   ', 'Sell_to_Name' => '']) === '', 'blank customer names stay empty');
 
 $mimirApi = 'mimir_test_key';
 $_GET['sample'] = '1';
@@ -122,6 +127,7 @@ $captured = capture_transport(static function (array $body): array {
                     'No' => "WO'1",
                     'Created_Date_Time' => '2026-03-02T14:05:06Z',
                     'End_Date' => '2026-02-28T00:00:00Z',
+                    'Bill_to_Name' => 'HENCON SERVICES BV',
                     'Sell_to_Name' => "O'Brien",
                     'Memo' => "regel 1\r\nregel 2",
                 ]],
@@ -182,6 +188,8 @@ check(in_array('Content-Type: application/json', $headers, true), 'Content-Type 
 check($liveWo['header']['Created_Date_Time'] === '3/2/2026 2:05:06 PM', 'datetime prints like the sample clock');
 check($liveWo['header']['End_Date'] === '2/28/2026', 'midnight datetime prints as a date');
 check($liveWo['header']['Memo'] === "regel 1\nregel 2", 'CRLF in memo becomes LF');
+check(vulcanus_customer_name($liveWo['header']) === 'HENCON SERVICES BV', 'live werkplaats prefers Bill_to_Name');
+check(in_array('Bill_to_Name', VULCANUS_WO_HEADER_SELECT, true), 'werkplaats select asks for Bill_to_Name');
 check(($liveWo['lines'][0]['No'] ?? '') === 'MWORKSHOP', 'lines sort by Line_No ascending');
 check(($liveWo['lines'][1]['No'] ?? '') === 'INSTRUCTIE', 'later Line_No stays second');
 check(format_werkplaats_qty($liveWo['lines'][0]) === '6 UUR', 'HR still prints as UUR');
@@ -233,6 +241,69 @@ check($liveAss['header']['Due_Date'] === '', 'BC blank date 0001-01-01 is empty'
 check($liveAss['header']['Quantity'] === '3', 'whole-number quantity stays a plain integer string');
 check($liveAss['header']['Assembled_Quantity'] === '3', 'float 3.0 prints as 3');
 check(($liveAss['lines'][0]['No'] ?? '') === 'A', 'assemblage lines sort by Line_No');
+check(count($assCaptured->calls) === 2, 'assemblage without a job number does not look up a project');
+
+reset_mimir_state();
+$mimirApi = 'mimir_test_key';
+$projectCaptured = capture_transport(static function (array $body): array {
+    $table = (string) ($body['table'] ?? '');
+    if ($table === 'AssemblageKop') {
+        return [
+            'code' => 200,
+            'raw' => json_encode(['value' => [[
+                'No' => 'ASS26094567',
+                'LVS_Job_No' => '20-15202129',
+                'Description' => 'Set',
+            ]]]),
+        ];
+    }
+    if ($table === 'Projecten') {
+        return [
+            'code' => 200,
+            'raw' => json_encode(['value' => [[
+                'Bill_to_Name' => 'DEMO KLANT BV',
+            ]]]),
+        ];
+    }
+    return ['code' => 200, 'raw' => json_encode(['value' => []])];
+});
+$assWithCustomer = fetch_assemblage('ASS26094567');
+check(count($projectCaptured->calls) === 3, 'assemblage with a job number looks up the project');
+check(($projectCaptured->calls[2]['table'] ?? '') === 'Projecten', 'customer lookup uses Projecten');
+check(($projectCaptured->calls[2]['filter'] ?? '') === "No eq '20-15202129'", 'customer lookup filters the job number');
+check(($projectCaptured->calls[2]['select'] ?? null) === VULCANUS_PROJECT_CUSTOMER_SELECT, 'project select is only the customer name');
+check(vulcanus_customer_name($assWithCustomer['header']) === 'DEMO KLANT BV', 'assemblage header shows the project customer');
+check($assWithCustomer['source'] === 'mimir', 'project lookup keeps the mimir source');
+
+reset_mimir_state();
+$mimirApi = 'mimir_test_key';
+mimir_set_transport(static function (string $url, array $options): array {
+    $decoded = json_decode((string) ($options[CURLOPT_POSTFIELDS] ?? ''), true);
+    $table = is_array($decoded) ? (string) ($decoded['table'] ?? '') : '';
+    if ($table === 'Projecten') {
+        return ['code' => 400, 'raw' => json_encode(['error' => 'veld ontbreekt'])];
+    }
+    if ($table === 'AssemblageKop') {
+        return [
+            'code' => 200,
+            'raw' => json_encode(['value' => [[
+                'No' => 'ASS1',
+                'LVS_Job_No' => '20-1',
+            ]]]),
+        ];
+    }
+    return ['code' => 200, 'raw' => json_encode(['value' => []])];
+});
+$assLookupFailed = null;
+$assLookupThrew = false;
+try {
+    $assLookupFailed = fetch_assemblage('ASS1');
+} catch (Throwable $error) {
+    $assLookupThrew = true;
+}
+check($assLookupThrew === false && is_array($assLookupFailed), 'a failed project lookup still returns the assemblage report');
+check(is_array($assLookupFailed) && vulcanus_customer_name($assLookupFailed['header']) === '', 'failed project lookup leaves the customer blank');
+check(is_array($assLookupFailed) && $assLookupFailed['source'] === 'mimir', 'failed project lookup does not relabel the header source');
 
 reset_mimir_state();
 $mimirBase = 'HTTPS://mimir.test/api/';
@@ -341,6 +412,15 @@ check(is_string($css) && str_contains($css, '.spinner') && str_contains($css, 'd
 check(is_string($css) && !preg_match('/table\.lines tr\s*\{[^}]*page-break-inside:\s*avoid/', $css), 'tbody rows are allowed to split across pages');
 check(is_string($css) && str_contains($css, 'counter(page)') && str_contains($css, '@bottom-right'), 'printed page numbers use the page margin counter');
 check(is_string($css) && str_contains($css, 'min-height: 0') && str_contains($css, 'overflow: visible'), 'print sheet drops the screen A4 min-height so it cannot clip');
+check(is_string($css) && preg_match('/table\.lines td \{[^}]*padding:\s*1px 4px;/', $css) === 1, 'line rows use tight vertical padding');
+check(is_string($css) && preg_match('/table\.lines td\.desc \.ext-text \{[^}]*white-space:\s*normal;/', $css) === 1, 'extended text does not keep pre-wrap line breaks');
+check(is_string($css) && str_contains($css, '.header-meta > .customer-line'), 'customer name spans the header grid');
+
+foreach (['werkplaatsorder.php', 'assemblage.php'] as $reportPage) {
+    $reportSource = file_get_contents(__DIR__ . '/../web/' . $reportPage);
+    check(is_string($reportSource) && str_contains($reportSource, 'vulcanus_customer_name($header)'), $reportPage . ' prints the customer name');
+    check(is_string($reportSource) && str_contains($reportSource, '>Klant<'), $reportPage . ' labels the customer name');
+}
 
 check(vulcanus_line_is_blank([
     'No' => '',
